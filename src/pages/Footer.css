@@ -1,0 +1,135 @@
+.footer {
+  width: 100%;
+  background: #0f172a;
+  color: #fff;
+  margin-top: 80px;
+}
+
+/* CONTAINER */
+.footer-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 40px;
+  padding: 60px 8%;
+}
+
+/* BRAND */
+.footer-brand h2 {
+  font-size: 1.8rem;
+  color: #ea7d22;
+}
+
+.footer-brand span {
+  color: #e89754;
+}
+
+.footer-brand p {
+  margin-top: 10px;
+  opacity: 0.8;
+}
+
+/* LINKS */
+.footer-links h4 {
+  margin-bottom: 15px;
+}
+
+.footer-links a {
+  display: block;
+  text-decoration: none;
+  color: #ccc;
+  margin-bottom: 8px;
+  transition: 0.3s;
+}
+
+.footer-links a:hover {
+  color: #fff;
+  transform: translateX(5px);
+}
+
+/* social */
+.footer-social {
+  text-align: center;
+}
+
+.footer-social h4 {
+  margin-bottom: 10px;
+}
+
+.social-icons {
+    display: flex;
+    gap: 15px;
+}
+
+.social-icons a {
+    width: 45px;
+    height: 45px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    flex-shrink: 0;
+    line-height: 1;
+    text-decoration: none;
+    font-size: 1.5rem;
+}
+
+.social-icons a:hover {
+    transform: scale(1.15);
+}
+
+/* Facebook */
+.social-icons .facebook {
+    color: #1877F2;
+}
+
+/* Instagram Gradient */
+.social-icons .instagram {
+    background: linear-gradient(
+        45deg,
+        #feda75,
+        #fa7e1e,
+        #d62976,
+        #962fbf,
+        #4f5bd5
+    );
+    color: white;
+    border-radius: 50%;
+    width: 39px;
+    height: 39px;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    margin-top: 3px;
+}
+
+/* TikTok */
+.social-icons .tiktok {
+    background: #fff;
+    color: #000;
+    width: 37px;
+    margin-top: 3px;
+    height: 37px;
+    /* border: 0px solid #fff; */
+    border-radius: 50%;
+}
+
+/* Telegram */
+.social-icons .telegram {
+    color: #229ED9;
+    font-size: 2.3rem;
+  }
+  
+  /* WhatsApp */
+  .social-icons .whatsapp {
+    color: #25D366;
+    font-size: 2.3rem;
+}
+
+/* COPYRIGHT */
+.footer-bottom {
+  text-align: center;
+  padding: 15px;
+  font-size: 0.9rem;
+  background: #020617;
+  opacity: 0.7;
+}
