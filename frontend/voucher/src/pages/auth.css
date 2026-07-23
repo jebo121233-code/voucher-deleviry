@@ -1,0 +1,71 @@
+.auth-container {
+  max-width: 400px;
+  margin: 50px auto;
+  padding: 25px;
+  border-radius: 12px;
+  background: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 5px 20px rgba(0,0,0,0.05);
+  border: 1px solid #6a5acd;
+}
+
+.auth-container h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #6a5acd;
+  font-weight: bold;
+}
+
+.auth-container form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.auth-container input,
+.auth-container select,
+.auth-container textarea {
+  padding: 10px;
+  font-size: 16px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  outline: none;
+  transition: 0.3s;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.auth-container input:focus,
+.auth-container select:focus,
+.auth-container textarea:focus {
+  border-color: #00bfff;
+  box-shadow: 0 0 8px rgba(0, 191, 255, 0.4);
+}
+
+.auth-container button {
+  padding: 10px;
+  font-size: 16px;
+  border-radius: 20px;
+  border: none;
+  background: linear-gradient(135deg, #6a5acd, #00bfff);
+  color: white;
+  font-weight: bold;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+.auth-container button:hover {
+  transform: scale(1.05);
+  box-shadow: 0 5px 15px rgba(0,0,0,0.2);
+}
+
+/* Sign Up link style */
+.auth-container .signup-link {
+  text-align: center;
+  color: #6a5acd;
+  font-weight: bold;
+}
+
+.signUp {
+  display: flex;
+  flex-direction: column;
+}
