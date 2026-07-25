@@ -18,7 +18,6 @@ export default function Home() {
     fetchStores(categoryId);
   };
 
-  // Reset filter
   const handleReset = () => {
     setSelectedCategory("");
     fetchStores();
@@ -35,7 +34,6 @@ export default function Home() {
       const res = await axios.get(url);
       setStores(res.data.stores);
     } catch (err) {
-      // Use fake stores if backend fails
       if (categoryId) {
         setStores(fakeStores.filter((s) => s.category_id === parseInt(categoryId)));
       } else {
@@ -69,7 +67,6 @@ export default function Home() {
     return () => clearInterval(interval);
   }, [stores.length]);
 
-  // reset index
   useEffect(() => {
     setIndex(0);
   }, [stores]);
@@ -84,7 +81,6 @@ export default function Home() {
     );
   };
 
-  // swipe
   const handleTouchStart = (e) => {
     touchStartX.current = e.targetTouches[0].clientX;
   };
@@ -112,7 +108,6 @@ export default function Home() {
           <h1 className="loading">Loading Stores...</h1>
         ) : (
           <>
-            {/* Background */}
             {stores[index]?.logos?.length > 0 && (
               <div
                 key={stores[index].logos[0]}
@@ -123,7 +118,6 @@ export default function Home() {
               />
             )}
 
-            {/* Content */}
             <div className="hero-content">
               <h1>{stores[index]?.name}</h1>
               <p>{stores[index]?.description}</p>
@@ -188,7 +182,6 @@ export default function Home() {
       {/* STORE GRID */}
       <section className="store">
         <div className="store-header-row">
-          {/* Dropdown */}
           <div className="filter-section">
             <select value={selectedCategory} onChange={handleCategoryChange}>
               <option value="">-- Select Category --</option>
@@ -213,7 +206,6 @@ export default function Home() {
                   </div>
                 )}
 
-                {/* IMAGE */}
                 {store.logos?.[0] && (
                   <img
                     src={`/${store.logos[0]}`}
