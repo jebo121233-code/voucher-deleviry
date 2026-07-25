@@ -1,3 +1,215 @@
+.home {
+  font-family: sans-serif;
+  color: #222;
+}
+
+.loading {
+  font-size: 3rem;
+  text-align: center;
+  margin-top: 100px;
+  color: gray;
+}
+
+.hero {
+  position: relative;
+  height: 50vh;
+  overflow: hidden;
+  color: white;
+}
+
+.hero-bg {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  background-size: cover;
+  background-position: center;
+  animation: fade 1s ease;
+  z-index: 1;
+}
+
+.hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 2;
+}
+
+.hero-content {
+  position: relative;
+  z-index: 3;
+  text-align: center;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.arrow {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 4;
+  font-size: 30px;
+  background: rgba(255,255,255,0.7);
+  border: none;
+  padding: 10px 15px;
+  cursor: pointer;
+  border-radius: 50%;
+  transition: 0.3s;
+}
+
+.arrow:hover {
+  background: white;
+  transform: translateY(-50%) scale(1.1);
+}
+
+.arrow.left {
+  left: 20px;
+}
+
+.arrow.right {
+  right: 20px;
+}
+
+.hero-dots {
+  position: absolute;
+  bottom: 20px;
+  width: 100%;
+  text-align: center;
+  z-index: 4;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  margin: 5px;
+  display: inline-block;
+  background: gray;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.dot.active {
+  background: white;
+}
+
+@keyframes fade {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.hook {
+  width: 100%;
+  height: auto;
+}
+
+.register-section {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 40px 0;
+}
+
+.register-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 14px 36px;
+  background: #28a745;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 12px;
+  font-size: 20px;
+  font-weight: 700;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+}
+
+.register-btn:hover {
+  background: #218838;
+  transform: translateY(-2px);
+}
+
+.register-btn:active {
+  transform: scale(0.98);
+}
+
+/* CARDS SECTION */
+.cards-section {
+  margin: 40px 0;
+  padding: 0 15px;
+}
+
+.cards-title {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+.cards-scroll {
+  display: flex;
+  gap: 15px;
+  overflow-x: auto;
+  padding-bottom: 10px;
+  scroll-snap-type: x mandatory;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.cards-scroll::-webkit-scrollbar {
+  display: none;
+}
+
+.card-link {
+  display: block;
+  width: 220px;
+  flex: 0 0 auto;
+  text-decoration: none;
+  color: inherit;
+}
+
+.card-item {
+  width: 100%;
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 12px;
+  text-align: center;
+  scroll-snap-align: start;
+  transition: 0.3s;
+  box-sizing: border-box;
+}
+
+.card-item:hover {
+  transform: translateY(-5px);
+  box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+}
+
+.card-item-img {
+  width: 100%;
+  height: 120px;
+  object-fit: cover;
+  border-radius: 10px;
+  margin-bottom: 10px;
+}
+
+.card-item p {
+  font-size: 13px;
+  color: #666;
+}
+
+/* STORE */
+/* HEADER ROW */
+.store-header-row {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 15px;
+}
+
+.see-all-btn {
+  background: black;
+  color: white;
+  border: none;
+  padding: 6px
 /* Desktop fix - keep mobile look, add horizontal scroll for cards */
 @media (min-width: 769px) {
   .home {
