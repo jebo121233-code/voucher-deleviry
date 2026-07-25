@@ -1,20 +1,36 @@
 // رسوم ثابتة تتحسب تلقائي في الحاسبة
 export const DELIVERY_FEE = 25; // رسوم شحن الدليفري
 export const CARD_SHIPPING_FEE = 10; // رسوم شحن كارت الخصم
+export const CART_SCRIPT_URL = "PASTE_YOUR_CART_APPS_SCRIPT_URL_HERE";
+export const WHATSAPP_NUMBER = "201025311724";
 
 // كروت الخصم اللي العميل يقدر يطلبها من الهوم مباشرة
 // عشان تضيف كارت جديد: زود عنصر هنا بنفس الشكل، وحط صور الكارت في مجلد public
 // ⚠️ عدّل price بالسعر الحقيقي بتاع الكارت
+
 export const cards = [
     {
-        id: "ve-card",
-        name: "VE Card",
-        description: "كارت الخصم الرسمي، بيديك خصومات في كل الأماكن الشريكة مع VE Voucher",
-        price: 150,
-        images: ["logo.jpeg"], // ممكن تضيف أكتر من صورة هنا
+        id: "ve-card-basic",
+        name: "VE Card - Basic",
+        description: "خصومات في مجموعة مختارة من المحلات والمطاعم (اكتب هنا أسماء الأماكن)",
+        price: 10,
+        images: ["logo.jpeg"],
+    },
+    {
+        id: "ve-card-plus",
+        name: "VE Card - Plus",
+        description: "خصومات أوسع تغطي أماكن أكتر (اكتب هنا أسماء الأماكن)",
+        price: 15,
+        images: ["logo.jpeg"],
+    },
+    {
+        id: "ve-card-premium",
+        name: "VE Card - Premium",
+        description: "أعلى نسب خصم وتغطية كاملة لكل الأماكن الشريكة (اكتب هنا أسماء الأماكن)",
+        price: 20,
+        images: ["logo.jpeg"],
     },
 ]
-
 export const categories = [
     { id: 1, name: "clothes" },
     { id: 2, name: "courses" },
