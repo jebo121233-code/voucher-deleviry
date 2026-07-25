@@ -4,10 +4,12 @@ import axios from "axios";
 import "./Navbar.css";
 import { shops as fakeStores }  from '../data/data.js';
 import { categories as fakeCategories }  from '../data/data.js';
+import { useCart } from "../context/CartContext.jsx";
 
 export default function Navbar() {
   const [userLoggedIn, setUserLoggedIn] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
+  const { itemsCount } = useCart();
 
   const [categoriesOpen, setCategoriesOpen] = useState(false);
   const [categories, setCategories] = useState([]);
@@ -132,6 +134,11 @@ export default function Navbar() {
         {/* <button className="nav-btn" onClick={handleAuthClick}>
           {userLoggedIn ? "Profile" : "Login"}
         </button> */}
+
+        <Link to="/cart" className="cart-icon-link" onClick={() => setMenuOpen(false)}>
+          🛒
+          {itemsCount > 0 && <span className="cart-badge">{itemsCount}</span>}
+        </Link>
 
         <div
           ref={toggleRef}
