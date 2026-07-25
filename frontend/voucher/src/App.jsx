@@ -10,11 +10,13 @@ import Profile from "./pages/Profile.jsx";
 import Store from "./pages/Store.jsx";
 import Delivery from "./pages/Delivery.jsx";
 import CardOrder from "./pages/CardOrder.jsx";
+import Cart from "./pages/Cart.jsx";
+import { CartProvider } from "./context/CartContext.jsx";
 import './App.css'
 
 function App() {
   return (
-    <>
+    <CartProvider>
       <Navbar />
       <Routes>
         <Route path='/' element={<Home/>} />
@@ -23,12 +25,13 @@ function App() {
         <Route path='/signup' element={<Signup/>} />
         <Route path='/delivery' element={<Delivery/>} />
         <Route path='/card/:id' element={<CardOrder/>} />
+        <Route path='/cart' element={<Cart/>} />
         <Route path='/login' element={<Login/>} />
         <Route path='/deals' element={<Deals/>} />
         <Route path='/profile' element={<Profile/>} />
       </Routes>
       <Footer />
-    </>
+    </CartProvider>
   )
 }
 
