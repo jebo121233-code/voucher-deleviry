@@ -10,6 +10,7 @@
   color: gray;
 }
 
+/* HERO */
 .hero {
   position: relative;
   height: 50vh;
@@ -43,6 +44,17 @@
   transform: translateY(-50%);
 }
 
+.hero-btn {
+  background: #000;
+  color: #fff;
+  border: none;
+  padding: 12px 28px;
+  border-radius: 8px;
+  font-size: 16px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
 .arrow {
   position: absolute;
   top: 50%;
@@ -62,13 +74,8 @@
   transform: translateY(-50%) scale(1.1);
 }
 
-.arrow.left {
-  left: 20px;
-}
-
-.arrow.right {
-  right: 20px;
-}
+.arrow.left { left: 20px; }
+.arrow.right { right: 20px; }
 
 .hero-dots {
   position: absolute;
@@ -88,9 +95,7 @@
   cursor: pointer;
 }
 
-.dot.active {
-  background: white;
-}
+.dot.active { background: white; }
 
 @keyframes fade {
   from { opacity: 0; }
@@ -133,8 +138,9 @@
   transform: scale(0.98);
 }
 
-/* CARDS SECTION */
-.cards-section {
+/* ===== SHARED CARD LOOK (VE Cards + Store Cards look identical) ===== */
+.cards-section,
+.store {
   margin: 40px 0;
   padding: 0 15px;
 }
@@ -144,60 +150,115 @@
   margin-bottom: 15px;
 }
 
-.cards-scroll {
+.cards-scroll,
+.store-scroll {
   display: flex;
   gap: 15px;
   overflow-x: auto;
   padding-bottom: 10px;
   scroll-snap-type: x mandatory;
-  justify-content: center;
-  flex-wrap: wrap;
 }
 
-.cards-scroll::-webkit-scrollbar {
+.cards-scroll::-webkit-scrollbar,
+.store-scroll::-webkit-scrollbar {
   display: none;
 }
 
-.card-link {
+.card-link,
+.store-link {
   display: block;
   width: 220px;
   flex: 0 0 auto;
   text-decoration: none;
   color: inherit;
+  scroll-snap-align: start;
 }
 
-.card-item {
+.card-item,
+.store-card {
+  position: relative;
   width: 100%;
+  height: 100%;
   background: #fff;
   border: 1px solid #eee;
   border-radius: 12px;
   padding: 12px;
   text-align: center;
-  scroll-snap-align: start;
   transition: 0.3s;
   box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
-.card-item:hover {
+.card-item:hover,
+.store-card:hover {
   transform: translateY(-5px);
   box-shadow: 0 8px 20px rgba(0,0,0,0.1);
 }
 
-.card-item-img {
+.card-item-img,
+.store-card-img {
   width: 100%;
   height: 120px;
-  object-fit: cover;
+  object-fit: contain;
+  background: #fafafa;
   border-radius: 10px;
   margin-bottom: 10px;
 }
 
-.card-item p {
-  font-size: 13px;
-  color: #666;
+.card-item h3,
+.store-card h3 {
+  font-size: 15px;
+  color: #e67300;
+  margin: 4px 0;
 }
 
-/* STORE */
-/* HEADER ROW */
+.card-item p,
+.store-card p {
+  font-size: 13px;
+  color: #666;
+  flex-grow: 1;
+}
+
+.percentage-badge {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: #ff3b30;
+  color: #fff;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.status-badge {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #fff;
+}
+
+.status-badge.active { background: #28a745; }
+
+.view-button {
+  margin-top: 10px;
+  width: 100%;
+  background: #000;
+  color: #fff;
+  border: none;
+  padding: 10px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+/* ===== STORE HEADER / FILTER ===== */
 .store-header-row {
   display: flex;
   justify-content: center;
@@ -205,21 +266,57 @@
   margin-bottom: 15px;
 }
 
+.filter-section {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+
+.filter-section select {
+  padding: 10px 14px;
+  border-radius: 8px;
+  border: 1px solid #ccc;
+  background: #f2f2f2;
+  font-size: 15px;
+}
+
+.filter-section button {
+  background: #000;
+  color: #fff;
+  border: none;
+  padding: 10px 20px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
 .see-all-btn {
   background: black;
   color: white;
   border: none;
-  padding: 6px
-/* Desktop fix - keep mobile look, add horizontal scroll for cards */
+  padding: 6px 14px;
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* ===== DESKTOP: keep mobile look, centered, no stray boxes ===== */
 @media (min-width: 769px) {
-  .home {
-    max-width: 480px;
-    margin: 0 auto;
-    box-shadow: 0 0 20px rgba(0,0,0,0.1);
-    min-height: 100vh;
+  body {
+    display: flex;
+    justify-content: center;
+    background: #ddd;
   }
 
-  .cards-scroll {
+  .home {
+    max-width: 480px;
+    width: 100%;
+    margin: 0 auto;
+    box-shadow: 0 0 20px rgba(0,0,0,0.15);
+    min-height: 100vh;
+    background: #fff;
+  }
+
+  .cards-scroll,
+  .store-scroll {
     flex-wrap: nowrap;
   }
 }
