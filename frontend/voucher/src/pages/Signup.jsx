@@ -1,16 +1,14 @@
 import { useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import "./auth.css";
-
-const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz4iYTup23ZNxkm-yzfbKQF35LDG2_RwdDOv_SCGbYG6sTH-bkdXFXVf4bChyV4iDUF/exec";
-const WHATSAPP_NUMBER = "201025311724";
+import { CART_SCRIPT_URL, WHATSAPP_NUMBER } from "../data/data.js";
 
 export default function Signup() {
   const [searchParams] = useSearchParams();
   const placeCode = searchParams.get("place") || "";
   const sourceCode = searchParams.get("source") || placeCode || "direct";
 
-  const [form, setForm] = useState({ name: "", whatsapp: "" });
+  const [form, setForm] = useState({ name: "", whatsapp: "", address: "" });
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -26,11 +24,12 @@ export default function Signup() {
     const source = decodeURIComponent(sourceCode);
 
     const whatsappMessage =
-`الاسم: ${form.name}
+`طلب كارت خصم لمكان معين 💳
+الاسم: ${form.name}
 رقم الواتساب: ${form.whatsapp}
-نوع الخصم: ${category}`;
+العنوان: ${form.address}
+عايز خصم في: ${category}`;
 
-    // افتح واتساب فورًا
     window.open(
       `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappMessage)}`,
       "_blank"
@@ -38,24 +37,28 @@ export default function Signup() {
 
     const payload = new Blob(
       [JSON.stringify({
+        request_type: "طلب خصم من صفحة مكان",
         first_name: form.name,
         whatsapp: form.whatsapp,
-        category,
+        card: category,
+        address: form.address,
         source,
       })],
       { type: "text/plain;charset=utf-8" }
     );
 
-    const sent = navigator.sendBeacon(SCRIPT_URL, payload);
+    const sent = navigator.sendBeacon(CART_SCRIPT_URL, payload);
 
     if (!sent) {
-      fetch(SCRIPT_URL, {
+      fetch(CART_SCRIPT_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
         body: JSON.stringify({
+          request_type: "طلب خصم من صفحة مكان",
           first_name: form.name,
           whatsapp: form.whatsapp,
-          category,
+          card: category,
+          address: form.address,
           source,
         }),
         keepalive: true,
@@ -63,7 +66,7 @@ export default function Signup() {
     }
 
     setMessage("✅ جارٍ تحويلك للواتساب...");
-    setForm({ name: "", whatsapp: "" });
+    setForm({ name: "", whatsapp: "", address: "" });
   };
 
   return (
@@ -90,6 +93,14 @@ export default function Signup() {
           name="whatsapp"
           placeholder="رقم الواتساب"
           value={form.whatsapp}
+          onChange={handleChange}
+          required
+        />
+        <input
+          type="text"
+          name="address"
+          placeholder="العنوان بالتفصيل"
+          value={form.address}
           onChange={handleChange}
           required
         />
