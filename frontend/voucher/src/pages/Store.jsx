@@ -28,7 +28,6 @@ export default function Store() {
     fetchStore();
   }, [id]);
 
-  // Keyboard navigation
   useEffect(() => {
     if (selectedImageIndex === null || !store?.images?.length) return;
 
