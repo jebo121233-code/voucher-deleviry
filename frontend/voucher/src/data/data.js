@@ -166,12 +166,6 @@ export const shops = [
         addresses: ["تقاطع حسان بن ثابت مع المتوكل", "الإستاد أمام شارع 306", "داخل نادي طنطا"],
         logos: ["rolz.jpeg"],
         images: ["rolz_menu1.jpeg", "rolz_menu2.jpeg", "rolz_menu3.jpeg"],
-        // مثال توضيحي بس - استبدل بالاصناف والاسعار الحقيقية بتاعة رولز
-        // price هو السعر قبل الخصم، discounted_price هو السعر بعد الخصم
-        menu: [
-            { name: "برجر لحمة", price: 120, discounted_price: 102 },
-            { name: "بيتزا صغيرة", price: 90, discounted_price: 76.5 },
-        ]
     },
     {
         id: "12",
@@ -288,8 +282,8 @@ export const shops = [
         name: "Bellissimo",
         description: "Specialty coffee crafted with passion, paired with selected desserts and refreshing beverages. An elegant café experience for those who appreciate quality and taste.",
         category_id: 9,
-        percentage: "20%",
-        status: "Active",
+        percentage: "soon",
+        status: "soon",
         addresses: [
             "طنطا - نادى طنطا الرياضى",
             "طنطا - شارع سعيد أمام سوبر ماركت خير زمان",
@@ -432,8 +426,8 @@ export const shops = [
         name: "Bellissimo",
         description: "Specialty coffee crafted with passion, paired with selected desserts and refreshing beverages. An elegant café experience for those who appreciate quality and taste.",
         category_id: 7,
-        percentage: "20%",
-        status: "Active",
+        percentage: "soon",
+        status: "soon",
         addresses: [
             "طنطا - نادى طنطا الرياضى",
             "طنطا - شارع سعيد أمام سوبر ماركت خير زمان",
@@ -448,4 +442,163 @@ export const shops = [
         logos: ["bellissimo.jpeg"],
         images: ["bellissimo_menu1.jpeg", "bellissimo_menu2.jpeg"]
     },
+
+{
+id: "42",
+name: " shawarma syria شاورما سوريا",
+description: "Authentic shawarma made with premium ingredients, bold flavors, and perfect seasonigs, serving every bite fresh for a truly satisfying expierence ",
+category_id:7 ,
+percentage: "10%",
+status: "Active",
+addresses: ["شارع الحلو بجوار مدرسة قاسم امين "],
+logos: ["shawarma_syria.jpeg"],
+images: []
+},
+
+   {
+id: "43",
+name: "kukluck",
+description: "Delecious meals and sandwiches and satisfy every taste with the secret recipe ",
+category_id:7 ,
+percentage: "15%",
+status: "Active",
+addresses: ["الاستاد امام شارع 306 "],
+logos: ["kukluck.jpeg"],
+images: []
+}, 
+
+
+{   
+id: "33",
+name: "واحد برجر",
+description: "Freshly grilled burgers made with premium ingredients,every bite is packed with bold flavour and satsfications  ",
+category_id: 7,
+percentage: "10%",
+status: "Active",
+addresses: ["شارع البيئة - شارع شركة المياه سابقا - سور الاستاد"],
+logos: ["wahed_burger.jpeg"],
+images: []
+},
+
+{
+id: "34",
+name: "casanova coffe",
+description: "A cozy cafe serving a wide variety of hot & cold beverages,dessert,and sweets treat",
+category_id: 7,
+percentage: "15",
+status: "Active",
+addresses: ["الاستاد بجوار بنك NEXT"],
+logos: ["casanova.jpeg"],
+images: []
+},
+
+    {
+id: "35",
+name: "shrimp pirates 15%",
+description: "Fresh seafood, bold flavors, and quality in every bite, from the sea to your table-served fresh every day ",
+category_id: 7,
+percentage: "15%",
+status: "Active",
+addresses: ["طنطا-شارع المتحف"],
+logos: ["shrimp_pirates.jpeg"],
+images: []
+},
+
+    {
+id: "36",
+name: "واحد مطبق",
+description: "Authentic Yemeni flavors served with a modern touch. From delicious shawarma and freshly baked pizzas to juicy burgers and more—crafted with quality and true hospitality.",
+category_id: 7,
+percentage: "10%",
+status: "Active",
+addresses: ["شارع المتحف من شارع سعيد "],
+logos: ["wahed_metabaq.jpeg"],
+images: []
+},
+
+{
+id: "37",
+name: "اkangro kids store ",
+description: "comfortable, stylish and high-quality clothing designed to keep children looking great and feeling confident everyday",
+category_id:1 ,
+percentage: "upto35%",
+status: "Active",
+addresses: ["طنطا-شارع بطرس مع سعيد امام حي ثان"],
+logos: ["kangro.jpeg"],
+images: []
+},
+
+{
+id: "38",
+name: "البيت الفلسطيني",
+description: "Experience the rich taste of authentic Palestinian cuisine, made with traditional recipes, fresh ingredients, and warm hospitality in every dish.",
+category_id:7 ,
+percentage: "10%",
+status: "Active",
+addresses: ["طنطا-بجوار سور الاستاد"],
+logos: ["palstine.jpeg"],
+images: []
+},
+
+{
+id: "39",
+name: "seven cafe",
+description: "A cozy cafe serving a wide variety of hot&cold beverages, desserts, and sweet treats, the perfecy place to relax, enjoy great flavors, and create memorable moments",
+category_id: 7,
+percentage: "15%",
+status: "Active",
+addresses: ["الاستاد-شارع الحياة بجوار مديرية الشباب و الرياضة "],
+logos: ["seven.jpeg"],
+images: []
+},
+
+{
+id: "40",
+name: "Frisky",
+description: "A uinque resturant&cafe offering delecious cuisine, premium drinks, and unique vibes, where great food, perfect coffe and memorable moments come togther.",
+category_id: 7,
+percentage: "12%",
+status: "Active",
+addresses: [" شارع سعيد بجوار مدرسة الامريكان"],
+logos: ["frisky.jpeg"],
+images: []
+},
+
+{
+id: "41",
+name: "منعم menem",
+description: "Authentic Egyptian food with unforgettable taste.Fresh, hearty, and full of flavour.",
+category_id: 7,
+percentage: "10%",
+status: "Active",
+addresses: ["طنطا-الاستاد بجوار نادي سيتي كلوب
+            الزقازيق-طلبه عويضه مع الخشاب"],
+logos: ["menem.jpeg"],
+images: []
+},
+
+{
+id: "",
+name: "",
+description: "",
+category_id: ,
+percentage: "",
+status: "",
+addresses: [""],
+logos: [""],
+images: []
+},
+
+{
+id: "",
+name: "",
+description: "",
+category_id: ,
+percentage: "",
+status: "",
+addresses: [""],
+logos: [""],
+images: []
+},
+    
 ]
