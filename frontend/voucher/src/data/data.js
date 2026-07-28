@@ -571,8 +571,7 @@ description: "Authentic Egyptian food with unforgettable taste.Fresh, hearty, an
 category_id: 7,
 percentage: "10%",
 status: "Active",
-addresses: ["طنطا-الاستاد بجوار نادي سيتي كلوب
-            الزقازيق-طلبه عويضه مع الخشاب"],
+addresses: ["طنطا-الاستاد بجوار نادي سيتي كلوب"," الزقازيق-طلبه عويضه مع الخشاب"],
 logos: ["menem.jpeg"],
 images: []
 },
