@@ -411,7 +411,7 @@ export const shops = [
         images: []
     },
     {
-        id: "33",
+        id: "45",
         name: "Asayel Otour اصايل عطور",
         description: "Premium fragrances and stylish accessories, carefully selected to suit every taste.",
         category_id: 3,
@@ -422,7 +422,7 @@ export const shops = [
         images: []
     },
     {
-        id: "22",
+        id: "44",
         name: "Bellissimo",
         description: "Specialty coffee crafted with passion, paired with selected desserts and refreshing beverages. An elegant café experience for those who appreciate quality and taste.",
         category_id: 7,
@@ -576,29 +576,5 @@ addresses: ["طنطا-الاستاد بجوار نادي سيتي كلوب
 logos: ["menem.jpeg"],
 images: []
 },
-
-{
-id: "",
-name: "",
-description: "",
-category_id: ,
-percentage: "",
-status: "",
-addresses: [""],
-logos: [""],
-images: []
-},
-
-{
-id: "",
-name: "",
-description: "",
-category_id: ,
-percentage: "",
-status: "",
-addresses: [""],
-logos: [""],
-images: []
-},
-    
+ 
 ]
