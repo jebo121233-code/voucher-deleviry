@@ -99,7 +99,7 @@ useEffect(() => {
               {/* image fix */}
               {store.logos?.[0] ? (
                 <img
-                  src={store.logos?.[0]}
+                  src={`/${store.logos[0]}`}
                   alt={store.name}
                 />
               ) : null}
