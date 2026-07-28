@@ -77,7 +77,7 @@ export function CartProvider({ children }) {
   const deliveryFeeTotal = hasDelivery ? DELIVERY_FEE : 0;
 
   const cardsSubtotal = cart.cardItems.reduce((sum, c) => sum + c.price * c.qty, 0);
-  const cardsShippingTotal = cart.cardItems.reduce((sum, c) => sum + CARD_SHIPPING_FEE * c.qty, 0);
+const cardsShippingTotal = cart.cardItems.length > 0 ? CARD_SHIPPING_FEE : 0;
 
   const grandTotal = deliverySubtotalAfter + deliveryFeeTotal + cardsSubtotal + cardsShippingTotal;
 
