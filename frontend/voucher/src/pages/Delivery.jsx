@@ -50,7 +50,7 @@ export default function Delivery() {
     return (
       <div className="auth-container delivery-container">
         <h2>اطلب دليفري</h2>
-        <p>المنيو لسه مش متاح لهذا المطعم، تواصل معانا مباشرة على واتساب.</p>
+        <p>متاح حاليا شحن كروت االخصم فقط و خدمة توصيل المطاعم ستتاح قريبا .</p>
       </div>
     );
   }
