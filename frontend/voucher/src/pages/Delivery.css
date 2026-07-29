@@ -107,3 +107,27 @@
   background: #ccc;
   cursor: not-allowed;
 }
+
+.delivery-container {
+  color: #222;
+}
+
+.delivery-container h2 {
+  color: #222;
+}
+
+.menu-item-name {
+  color: #222;
+  font-weight: 600;
+}
+
+.price-before {
+  color: #999;
+  text-decoration: line-through;
+  margin-inline-start: 6px;
+}
+
+.price-after {
+  color: #28a745;
+  font-weight: bold;
+}
