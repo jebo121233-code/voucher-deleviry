@@ -72,8 +72,8 @@ export const shops = [
         name: "Tiny Kids",
         description: "Comfortable, stylish, and high-quality clothing designed to keep children looking great and feeling confident every day.",
         category_id: 1,
-        percentage: "up to 30%",
-        status: "Active",
+        percentage: "off%",
+        status: "off",
         addresses: ["بطرس مع سعيد بجوار صيدلية هشام وفؤاد"],
         logos: ["tiny_kids.jpeg"],
         images: []
@@ -83,8 +83,8 @@ export const shops = [
         name: "Tarek Helmy",
         description: "Premium beauty and skincare products designed to enhance your natural glow and confidence.",
         category_id: 3,
-        percentage: "15-20%",
-        status: "Active",
+        percentage: "off",
+        status: "off",
         addresses: ["علي مبارك مع ابن الفارض امام نور الدين"],
         logos: ["tarek_helmy.jpeg"],
         images: []
