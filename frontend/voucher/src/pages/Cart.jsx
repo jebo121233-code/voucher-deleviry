@@ -6,6 +6,21 @@ import "./Cart.css";
 import { useCart } from "../context/CartContext.jsx";
 import { CART_SCRIPT_URL, WHATSAPP_NUMBER } from "../data/data.js";
 
+const CARD_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfL4bWVRHsgjOa2I5J2RC38pF2olaUMWsVghwxfuz9MrJyslA/formResponse";
+
+const CARD_FORM_ENTRIES = {
+  name: "entry.1441889611",
+  phone: "entry.1738070286",
+  address: "entry.766948384",
+  store: "entry.384682150",
+  cardTier: "entry.336839636",
+  cardPrice: "entry.1754502734",
+  shippingFee: "entry.483753397",
+  total: "entry.89843056",
+  source: "entry.732120729",
+  status: "entry.1092939406",
+};
+
 export default function Cart() {
   const navigate = useNavigate();
   const {
@@ -100,6 +115,33 @@ export default function Cart() {
         keepalive: true,
       }).catch((err) => console.error("خطأ في الاتصال بالسيرفر:", err));
     }
+
+    // إرسال البيانات لجوجل فورم (Card Orders)
+    const cardTierText = cart.cardItems
+      .map((c) => `${c.name} × ${c.qty}`)
+      .join(", ");
+
+    const formData = new URLSearchParams();
+    formData.append(CARD_FORM_ENTRIES.name, form.name);
+    formData.append(CARD_FORM_ENTRIES.phone, form.whatsapp);
+    formData.append(CARD_FORM_ENTRIES.address, form.address);
+    formData.append(CARD_FORM_ENTRIES.store, hasDelivery ? cart.restaurant : "");
+    formData.append(CARD_FORM_ENTRIES.cardTier, cardTierText);
+    formData.append(CARD_FORM_ENTRIES.cardPrice, cart.cardItems.length > 0 ? cardsSubtotal : "");
+    formData.append(
+      CARD_FORM_ENTRIES.shippingFee,
+      (cart.cardItems.length > 0 ? cardsShippingTotal : 0) + (hasDelivery ? deliveryFeeTotal : 0)
+    );
+    formData.append(CARD_FORM_ENTRIES.total, grandTotal);
+    formData.append(CARD_FORM_ENTRIES.source, "");
+    formData.append(CARD_FORM_ENTRIES.status, "");
+
+    fetch(CARD_FORM_URL, {
+      method: "POST",
+      mode: "no-cors",
+      headers: { "Content-Type": "application/x-www-form-urlencoded" },
+      body: formData.toString(),
+    }).catch((err) => console.error("خطأ في إرسال الفورم:", err));
 
     setMessage("✅ جارٍ تحويلك للواتساب...");
     clearCart();
