@@ -575,5 +575,29 @@ addresses: ["طنطا-الاستاد بجوار نادي سيتي كلوب"," ا
 logos: ["menem.jpeg"],
 images: []
 },
- 
+
+{
+id: "46",
+name: "HANOVER",
+description: "Specialty coffe crafted with passion, paired with selected desserts and refreshing beverages, An elegant cafe expirence with those who appreciate quality and taste",
+category_id: 7,
+percentage: "20%",
+status: "Active",
+addresses: ["الاستاد امام كورنيش المرشحة"],
+logos: ["اhanover.jpeg"],
+images: []
+},
+
+{
+id: "47",
+name: "مشلتت",
+description: "Where Every Bite Feels Homemade. From crispy savory pies to rich, sweet delights, we craft every pastry with fresh ingredients and authentic flavor.Whether you're craving a hearty meal or a delicious dessert, there's always a perfect pie waiting for you.",
+category_id: 7,
+percentage: "10%",
+status: "Active",
+addresses: ["الاستاد بجوار صيدلية اسلام المنصوري - نجف الجامعة امام مطعم ولعتين"],
+logos: ["meshaltet.jpeg"],
+images: []
+},
+    
 ]
