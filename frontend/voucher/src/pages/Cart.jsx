@@ -141,6 +141,7 @@ export default function Cart() {
       mode: "no-cors",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: formData.toString(),
+      keeplive:true,
     }).catch((err) => console.error("خطأ في إرسال الفورم:", err));
 
     setMessage("✅ جارٍ تحويلك للواتساب...");
