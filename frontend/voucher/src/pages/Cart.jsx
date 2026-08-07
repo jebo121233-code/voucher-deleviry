@@ -71,15 +71,18 @@ export default function Cart() {
     let cardsText = "";
     if (cart.cardItems.length > 0) {
       messageParts.push(`--- كروت الخصم ---`);
-      cardsText = cart.cardItems
-        .map((c) => `${c.name} × ${c.qty} = ${c.price * c.qty} ج.م (+ شحن ${10 * c.qty} ج.م)`)
+     cardsText = cart.cardItems
+        .map((c) => `${c.name} × ${c.qty} = ${c.price * c.qty} ج.م`)
         .join(" | ");
       cart.cardItems.forEach((c) => {
-        messageParts.push(`- ${c.name} × ${c.qty} = ${c.price * c.qty} ج.م (+ شحن ${10 * c.qty} ج.م)`);
+       messageParts.push(`- ${c.name} × ${c.qty} = ${c.price * c.qty} ج.م`);
       });
       messageParts.push("");
     }
+const totalShippingFee =
+      (hasDelivery ? deliveryFeeTotal : 0) + (cart.cardItems.length > 0 ? 10 : 0);
 
+    messageParts.push(`رسوم الشحن: ${totalShippingFee} ج.م`);
     messageParts.push(`الإجمالي النهائي: ${grandTotal} ج.م`);
 
     const whatsappMessage = messageParts.join("\n");
