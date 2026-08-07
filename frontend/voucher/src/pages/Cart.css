@@ -15,6 +15,7 @@
   border-radius: 12px;
   padding: 14px;
   margin-bottom: 15px;
+  color:#000; 
 }
 
 .cart-section-header {
@@ -27,6 +28,7 @@
 .cart-section h3 {
   margin: 0 0 8px;
   font-size: 1.05rem;
+  color:#000;
 }
 
 .cart-line {
@@ -36,6 +38,7 @@
   padding: 6px 0;
   border-bottom: 1px dashed #e5e5e5;
   gap: 8px;
+  color:#000;
 }
 
 .cart-line:last-child {
