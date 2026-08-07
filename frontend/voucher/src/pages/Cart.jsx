@@ -177,7 +177,7 @@ export default function Cart() {
       {cart.cardItems.length > 0 && (
         <div className="cart-section">
           <h3>💳 كروت الخصم</h3>
-          {cart.cardItems.map((c) => (
+         {cart.cardItems.map((c) => (
             <div className="cart-line" key={c.id}>
               <span>{c.name}</span>
               <div className="qty-control">
@@ -185,10 +185,11 @@ export default function Cart() {
                 <span>{c.qty}</span>
                 <button type="button" onClick={() => updateCardQty(c.id, 1)}>+</button>
               </div>
-              <span>{c.price * c.qty + 10 * c.qty} ج.م</span>
+              <span>{c.price * c.qty} ج.م</span>
               <button className="remove-link" onClick={() => removeCard(c.id)}>✕</button>
             </div>
           ))}
+          <div className="cart-line"><span>رسوم الشحن</span><span>{cardsShippingTotal} ج.م</span></div>
         </div>
       )}
 
