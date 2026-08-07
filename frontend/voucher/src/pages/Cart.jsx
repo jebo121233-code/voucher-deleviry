@@ -135,15 +135,9 @@ export default function Cart() {
     formData.append(CARD_FORM_ENTRIES.total, grandTotal);
     formData.append(CARD_FORM_ENTRIES.source, "");
     formData.append(CARD_FORM_ENTRIES.status, "");
-
-    fetch(CARD_FORM_URL, {
-      method: "POST",
-      mode: "no-cors",
-      headers: { "Content-Type": "application/x-www-form-urlencoded" },
-      body: formData.toString(),
-      keeplive:true,
-    }).catch((err) => console.error("خطأ في إرسال الفورم:", err));
-
+    
+  navigator.sendBeacon(CARD_FORM_URL, formData);
+  
     setMessage("✅ جارٍ تحويلك للواتساب...");
     clearCart();
     setTimeout(() => navigate("/"), 1500);
