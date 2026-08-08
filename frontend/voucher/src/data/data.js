@@ -584,7 +584,7 @@ category_id: 7,
 percentage: "20%",
 status: "Active",
 addresses: ["الاستاد امام كورنيش المرشحة"],
-logos: ["اHanover.jpeg"],
+logos: ["Hanover.jpeg"],
 images: []
 },
 
