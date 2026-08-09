@@ -452,7 +452,7 @@ percentage: "10%",
 status: "Active",
 addresses: ["شارع الحلو بجوار مدرسة قاسم امين "],
 logos: ["shawarma_syria.jpeg"],
-images: []
+images: ["syria.1.jpg","syria.2.jpg"]
 },
 
    {
@@ -464,7 +464,7 @@ percentage: "15%",
 status: "Active",
 addresses: ["الاستاد امام شارع 306 "],
 logos: ["kukluck.jpeg"],
-images: []
+images: ["kukluck.1.jpg","kukluck.2.jpg","kukluck.3.jpg","kukluck.4.jpg"]
 }, 
 
 
@@ -477,7 +477,7 @@ percentage: "10%",
 status: "Active",
 addresses: ["شارع البيئة - شارع شركة المياه سابقا - سور الاستاد"],
 logos: ["wahed_burger.jpeg"],
-images: []
+images: ["wahed.1.jpg","wahed.2.jpg","wahed.3.jpg","wahed.4.jpg","wahed.5.jpg","wahed.6.jpg","wahed.7.jpg","wahed.8.jpg","wahed.9.jpg"]
 },
 
 {
@@ -489,7 +489,7 @@ percentage: "15",
 status: "Active",
 addresses: ["الاستاد بجوار بنك NEXT"],
 logos: ["casanova.jpeg"],
-images: []
+images: ["casanova.1.jpg","casanova.2.jpg","casanova.3.jpg","casanova.4.jpg","casanova.5.jpg","casanova.6.jpg","casanova.7jpg","casanova.8.jpg","casanova.9.jpg","casanova.10.jpg"]
 },
 
     {
@@ -501,7 +501,7 @@ percentage: "15%",
 status: "Active",
 addresses: ["طنطا-شارع المتحف"],
 logos: ["shrimp_pirates.jpeg"],
-images: []
+images: ["shrimp.1.jpg","shrimp2.jpg","shrimp.3.jpg","shrimp.4.jpg"]
 },
 
     {
@@ -549,7 +549,7 @@ percentage: "15%",
 status: "Active",
 addresses: ["الاستاد-شارع الحياة بجوار مديرية الشباب و الرياضة "],
 logos: ["seven.jpeg"],
-images: []
+images: ["seven.1.jpg","seven.2.jpg"]
 },
 
 {
