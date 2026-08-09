@@ -489,7 +489,7 @@ percentage: "15",
 status: "Active",
 addresses: ["الاستاد بجوار بنك NEXT"],
 logos: ["casanova.jpeg"],
-images: ["casanova.1.jpg","casanova.2.jpg","casanova.3.jpg","casanova.4.jpg","casanova.5.jpg","casanova.6.jpg","casanova.7jpg","casanova.8.jpg","casanova.9.jpg","casanova.10.jpg"]
+images: ["casanova.1.jpg","casanova.2.jpg","casanova.3.jpg","casanova.4.jpg","casanova.5.jpg","casanova.6.jpg","casanova.7.jpg","casanova.8.jpg","casanova.9.jpg","casanova.10.jpg"]
 },
 
     {
@@ -501,7 +501,7 @@ percentage: "15%",
 status: "Active",
 addresses: ["طنطا-شارع المتحف"],
 logos: ["shrimp_pirates.jpeg"],
-images: ["shrimp.1.jpg","shrimp2.jpg","shrimp.3.jpg","shrimp.4.jpg"]
+images: ["shrimp.1.jpg","shrimp.2.jpg","shrimp.3.jpg","shrimp.4.jpg"]
 },
 
     {
