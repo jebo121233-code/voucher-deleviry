@@ -597,7 +597,7 @@ percentage: "10%",
 status: "Active",
 addresses: ["الاستاد بجوار صيدلية اسلام المنصوري - نجف الجامعة امام مطعم ولعتين"],
 logos: ["meshaltet.jpeg"],
-images: []
+images: ["meshaltet.1.jpg","meshaltet.2.jpg"]
 },
     
 ]
