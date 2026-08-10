@@ -599,5 +599,29 @@ addresses: ["الاستاد بجوار صيدلية اسلام المنصوري 
 logos: ["meshaltet.jpeg"],
 images: ["meshaltet.1.jpg","meshaltet.2.jpg"]
 },
+
+    {
+id: "48",
+name: "نوجا",
+description: "حلويات شرقية بطعم أصيل ولمسة مختلفة متخصصين في الرز بلبن و ام علي و الكنافة و البسبوسة واجمل الميكسات اللي تجمع اكتر من حلو في طبق واحد...كل لقمة حكاية",
+category_id: 7,
+percentage: "15%",
+status: "acyive",
+addresses: ["الاستاد امام بوبة سيتي كلوب2"],
+logos: ["noga.jpg"],
+images: ["noga.1.jpg","noga.2.jpg","noga.3.jpg","noga.4.jpg","noga.5.jpg","noga.6.jpg","noga.7.jpg"]
+},
+
+{
+id: "49",
+name: "Twevel",
+description: "",
+category_id: 7,
+percentage: "20%",
+status: "Active",
+addresses: ["كورنيش الاستاد سور نادي سيتي كلوب"],
+logos: ["twevel.jpg"],
+images: []
+},
     
 ]
