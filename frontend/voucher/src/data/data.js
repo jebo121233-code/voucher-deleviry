@@ -513,7 +513,7 @@ percentage: "10%",
 status: "Active",
 addresses: ["شارع المتحف من شارع سعيد "],
 logos: ["wahed_metabaq.jpeg"],
-images: ["metapapq.1.jpg","metapaq.2.jpg"]
+images: ["metapaq.1.jpg","metapaq.2.jpg"]
 },
 
 {
@@ -537,7 +537,7 @@ percentage: "10%",
 status: "Active",
 addresses: ["طنطا-بجوار سور الاستاد"],
 logos: ["palstine.jpeg"],
-images: ["palestine1.jpg","palestine.2.jpg"]
+images: ["palestine.1.jpg","palestine.2.jpg"]
 },
 
 {
@@ -561,7 +561,7 @@ percentage: "12%",
 status: "Active",
 addresses: [" شارع سعيد بجوار مدرسة الامريكان"],
 logos: ["frisky.jpeg"],
-images: ["frisky.1.jpg","frisky.2.jpg","frisky.3.jpg","frisky.4.jpg","frisky.5.jpg","frisky6.jpg","frisky.7.jpg","frisky.8.jpg","frisky9jpg","frisky.10.jpg","frisky.11.jpg","frisky.12.jpg","frisky.13.jpg","frisky.14.jpg","frisky.15.jpg","frisky.16.jpg","frisky.17.jpg","frisky.18.jpg","frisky.19.jpg","frisky.20.jpg","frisky.21.jpg","frisky.22.jpg"]
+images: ["frisky.1.jpg","frisky.2.jpg","frisky.3.jpg","frisky.4.jpg","frisky.5.jpg","frisky.6.jpg","frisky.7.jpg","frisky.8.jpg","frisky.9.jpg","frisky.10.jpg","frisky.11.jpg","frisky.12.jpg","frisky.13.jpg","frisky.14.jpg","frisky.15.jpg","frisky.16.jpg","frisky.17.jpg","frisky.18.jpg","frisky.19.jpg","frisky.20.jpg","frisky.21.jpg","frisky.22.jpg"]
 },
 
 {
