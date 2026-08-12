@@ -10,26 +10,41 @@ export const WHATSAPP_NUMBER = "201025311724";
 
 export const cards = [
     {
-        id: "ve-card-basic",
-        name: "VE Card - Basic",
+        id: "ve-card-Ymmy-1",
+        name: "VE Card - Ymmy1",
         description: "خصومات في مجموعة مختارة من المحلات والمطاعم (اكتب هنا أسماء الأماكن)",
         price: 10,
         images: ["logo.jpeg"],
     },
     {
-        id: "ve-card-plus",
-        name: "VE Card - Plus",
+        id: "ve-card-ymmy-2",
+        name: "VE Card - Ymmy2",
         description: "خصومات أوسع تغطي أماكن أكتر (اكتب هنا أسماء الأماكن)",
-        price: 15,
+        price: 10,
         images: ["logo.jpeg"],
     },
     {
-        id: "ve-card-premium",
-        name: "VE Card - Premium",
+        id: "ve-card-cafe-1",
+        name: "VE Card - cafe1",
         description: "أعلى نسب خصم وتغطية كاملة لكل الأماكن الشريكة (اكتب هنا أسماء الأماكن)",
-        price: 20,
+        price: 10,
         images: ["logo.jpeg"],
     },
+    {
+        id:"ve-card-cafe-2",
+        name:"VE Card - cafe2",
+        description:"",
+        price:10,
+        images: ["logo.jpeg"],
+    },
+    {
+        id:"ve-card-mix",
+        name:"VE Card - mix",
+        description:"",
+        price:10,
+        images: ["logo.jpeg"],
+    },
+    
 ]
 export const categories = [
     { id: 1, name: "clothes" },
