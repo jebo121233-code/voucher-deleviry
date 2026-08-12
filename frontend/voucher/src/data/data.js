@@ -640,13 +640,13 @@ images: ["noga.1.jpg","noga.2.jpg","noga.3.jpg","noga.4.jpg","noga.5.jpg","noga.
 {
 id: "49",
 name: "Twevel",
-description: "",
+description: "A luxurious café & restaurant offering a wide variety of delicious dishes, drinks, and desserts,Elegant vibes, premium quality, and everything you love — all under one roof",
 category_id: 7,
 percentage: "20%",
 status: "Active",
 addresses: ["كورنيش الاستاد سور نادي سيتي كلوب"],
 logos: ["twevel.jpg"],
-images: []
+images: ["twevel.1.jpg","twevel.2.jpg","twevel.3.jpg","twevel.4.jpg","twevel.5.jpg","twevel.6.jpg","twevel.7.jpg","twevel.8.jpg","twevel.9.jpg","twevel.10.jpg","twevel.11.jpg","twevel.12.jpg","twevel.13.jpg","twevel.14.jpg","twevel.15.jpg","twevel.16.jpg","twevel.17.jpg","twevel.18.jpg","twevel.19.jpg","twevel.20.jpg","twevel.21.jpg","twevel.22.jpg"]
 },
     
 ]
