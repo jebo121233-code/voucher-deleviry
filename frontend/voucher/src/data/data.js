@@ -43,7 +43,7 @@ export const cards = [
         description:"خصومات علي اكتر من 40 مكان .. هتلاقي كل اللي نفسك فيه",
         price:10,
         logo: ["logo.jpeg"],
-        image: ["mix.1.jpg","mix.2.jpg","mix.3.jpg","mix.4.jpg","mix.5.jpg","mix.6.jpg","mix.7.jpg","mix.8.jpg","mix.9.jpg","mix.10.jpg","mix.11.jpg","mix.12.jpg","mix.13.jpg","mix.14.jpg"],
+        images: ["mix.1.jpg","mix.2.jpg","mix.3.jpg","mix.4.jpg","mix.5.jpg","mix.6.jpg","mix.7.jpg","mix.8.jpg","mix.9.jpg","mix.10.jpg","mix.11.jpg","mix.12.jpg","mix.13.jpg","mix.14.jpg"],
     },
     
 ]
