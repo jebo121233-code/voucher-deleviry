@@ -18,6 +18,7 @@ export default function CardOrder() {
 
   const total = (card.price || 0) + CARD_SHIPPING_FEE;
 
+  const galleryImages = card.images?.length > 0 ? card.images : (card.logo || []);
   const handleAddToCart = () => {
     addCard({ id: card.id, name: card.name, price: card.price });
     navigate("/cart");
@@ -30,9 +31,9 @@ export default function CardOrder() {
         <p>{card.description}</p>
 
         {/* GALLERY */}
-        {card.images?.length > 0 && (
+        {galleryImages.length > 0 && (
           <div className="store-images">
-            {card.images.map((img, index) => (
+            {galleryImages.map((img, index) => (
               <img
                 key={index}
                 src={`/${img}`}
@@ -47,7 +48,7 @@ export default function CardOrder() {
         {selectedImageIndex !== null && (
           <div className="image-modal" onClick={() => setSelectedImageIndex(null)}>
             <img
-              src={`/${card.images[selectedImageIndex]}`}
+              src={`/${galleryImages[selectedImageIndex]}`}
               alt="Preview"
               className="modal-image"
               onClick={(e) => e.stopPropagation()}
