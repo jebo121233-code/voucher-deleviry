@@ -10,39 +10,40 @@ export const WHATSAPP_NUMBER = "201025311724";
 
 export const cards = [
     {
-        id: "ve-card-Ymmy-1",
+        id: "ve-card-Yummy-1",
         name: "VE Card - Ymmy1",
-        description: "خصومات في مجموعة مختارة من المحلات والمطاعم (اكتب هنا أسماء الأماكن)",
+        description: "خصومات علي برقوقة.البيت الفلسطيني. مشلتت.شاورما سيتي . واحد مطبق . نوجا. juice box",
         price: 10,
-        images: ["logo.jpeg"],
+        logo: ["yummy.1.jpg"],
     },
     {
-        id: "ve-card-ymmy-2",
+        id: "ve-card-yummy-2",
         name: "VE Card - Ymmy2",
-        description: "خصومات أوسع تغطي أماكن أكتر (اكتب هنا أسماء الأماكن)",
+        description: "خصومات علي شاورما سوريا. واحد برجر. منعم. Rolz. Kukluck. Shrimp pirates. Milky",
         price: 10,
-        images: ["logo.jpeg"],
+        logo: ["yummy.2.jpg"],
     },
     {
         id: "ve-card-cafe-1",
         name: "VE Card - cafe1",
-        description: "أعلى نسب خصم وتغطية كاملة لكل الأماكن الشريكة (اكتب هنا أسماء الأماكن)",
+        description: "Hanover. W lounge. Seven. Sax's. TeaTalk",
         price: 10,
-        images: ["logo.jpeg"],
+        logo: ["cafe.1.jpg"],
     },
     {
         id:"ve-card-cafe-2",
         name:"VE Card - cafe2",
-        description:"",
+        description:"911. Frisky. OAK. Twevel. Casanova. Juice Box",
         price:10,
-        images: ["logo.jpeg"],
+        logo: ["cafe.2.jpg"],
     },
     {
         id:"ve-card-mix",
         name:"VE Card - mix",
-        description:"",
+        description:"خصومات علي اكتر من 40 مكان .. هتلاقي كل اللي نفسك فيه",
         price:10,
-        images: ["logo.jpeg"],
+        logo: ["logo.jpeg"],
+        image: ["mix.1.jpg","mix.2.jpg","mix.3.jpg","mix.4.jpg","mix.5.jpg","mix.6.jpg","mix.7.jpg","mix.8.jpg","mix.9.jpg","mix.10.jpg","mix.11.jpg","mix.12.jpg","mix.13.jpg","mix.14.jpg"],
     },
     
 ]
