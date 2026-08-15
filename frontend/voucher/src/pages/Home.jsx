@@ -162,7 +162,7 @@ export default function Home() {
               >
                 <div className="card-item">
                   <img
-                    src={`/${card.images?.[0]}`}
+                    src={`/${card.logo?.[0]}`}
                     alt={card.name}
                     className="card-item-img"
                   />
