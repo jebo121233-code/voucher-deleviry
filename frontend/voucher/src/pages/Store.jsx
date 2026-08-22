@@ -1,15 +1,15 @@
 import { useEffect, useState } from "react";
-import { useParams, Link } from "react-router-dom";
+import { useParams, useNavigate, Link } from "react-router-dom";
 import axios from "axios";
 import "./Store.css";
 import { shops as fakeStores } from "../data/data.js";
-import { useCart}from"../context/CartContext.jsx";
+import { useCart } from "../context/CartContext.jsx";
 
 export default function Store() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const {addCard} = useCart();
-  
+  const { addCard } = useCart();
+
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedImageIndex, setSelectedImageIndex] = useState(null);
@@ -87,22 +87,23 @@ export default function Store() {
               alt={store.name}
             />
 
-          <button
-  type="button"
-  className="register-btn"
-  onClick={() => {
-    addCard({
-      id: `store-card-${store.id}`,
-      name: `${store.name} - VE Card`,
-      price: 10,
-      store: store.name,
-    });
-    navigate("/cart");
-  }}
->
-  احصل على خصم - {store.name}
-</button>
-            
+            <div className="store-actions">
+              <button
+                type="button"
+                className="register-btn"
+                onClick={() => {
+                  addCard({
+                    id: `store-card-${store.id}`,
+                    name: `${store.name} - VE Card`,
+                    price: 10,
+                    store: store.name,
+                  });
+                  navigate("/cart");
+                }}
+              >
+                احصل على خصم - {store.name}
+              </button>
+
               {/* زرار الدليفري - يظهر بس في المطاعم/الكافيهات (7) والمشروبات (9) */}
               {(store.category_id === 7 || store.category_id === 9) && (
                 <Link
