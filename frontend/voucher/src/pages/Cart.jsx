@@ -184,8 +184,23 @@ const totalShippingFee =
 
       {cart.cardItems.length > 0 && (
         <div className="cart-section">
-          <h3>💳 كروت الخصم</h3>
-         {cart.cardItems.map((c) => (
+         <h3>💳 كروت الخصم</h3>
+          <div
+  className="cart-note-box"
+  style={{
+    background: "#fff8e1",
+    border: "1px solid #ffe082",
+    borderRadius: "8px",
+    padding: "10px 14px",
+    fontSize: "14px",
+    color: "#7a5c00",
+    marginBottom: "12px",
+  }}
+>
+  ℹ️  الكارت بيديك خصم على اسم المكان اللي اخترته + 6 أماكن تانية كمان
+اشتري اكتر وفر اكتر
+          </div>
+            {cart.cardItems.map((c) => (
             <div className="cart-line" key={c.id}>
               <span>{c.name}</span>
               <div className="qty-control">
