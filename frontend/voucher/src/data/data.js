@@ -182,6 +182,14 @@ export const shops = [
         addresses: ["تقاطع حسان بن ثابت مع المتوكل", "الإستاد أمام شارع 306", "داخل نادي طنطا"],
         logos: ["rolz.jpeg"],
         images: ["rolz_menu1.jpeg", "rolz_menu2.jpeg", "rolz_menu3.jpeg"],
+        menu: [
+  { name: "هيكري برجر", price: 97, discounted_price: 82.45, image: "images/rolz/hickory-burger.jpg" },
+  { name: "ديل تشيز برجر", price: 134, discounted_price: 113.90, image: "images/rolz/double-cheese-burger.jpg" },
+  { name: "سينجل تشيز برجر", price: 85, discounted_price: 72.25, image: "images/rolz/cheese-burger.jpg" },
+  { name: "هامر برجر", price: 106, discounted_price: 90.10, image: "images/rolz/hammer-burger.jpg" },
+  { name: "فولكانو برجر", price: 106, discounted_price: 90.10, image: "images/rolz/volcano-burger.jpg" },
+  { name: "تشيز بيف رول", price: 106, discounted_price: 90.10, image: "images/rolz/cheese-beef-roll.jpg" },
+],
     },
     {
         id: "12",
