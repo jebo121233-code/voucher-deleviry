@@ -92,14 +92,14 @@
   font-weight: 600;
 }
 
-/*  Button */
+/* ● Button */
 .store-card button {
   margin-top: auto;
   padding: 10px 22px;
   border: none;
   border-radius: 25px;
   /* background: linear-gradient(135deg, #ea7d22, #e49454); */
-  color: black;
+  color: white;
   font-weight: bold;
   cursor: pointer;
   transition: all 0.3s ease;
