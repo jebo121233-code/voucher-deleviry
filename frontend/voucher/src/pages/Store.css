@@ -254,3 +254,17 @@
   margin: 6px 0;
   color: #555;
 }
+
+.menu-item-info {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.menu-item-thumb {
+  width: 40px;
+  height: 40px;
+  object-fit: cover;
+  border-radius: 8px;
+  flex-shrink: 0;
+}
