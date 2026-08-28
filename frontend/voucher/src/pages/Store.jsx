@@ -13,7 +13,23 @@ export default function Store() {
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedImageIndex, setSelectedImageIndex] = useState(null);
+const [quantities, setQuantities] = useState({});
 
+  const getQuantity = (index) => quantities[index] || 1;
+
+  const increaseQty = (index) => {
+    setQuantities((prev) => ({
+      ...prev,
+      [index]: getQuantity(index) + 1,
+    }));
+  };
+
+  const decreaseQty = (index) => {
+    setQuantities((prev) => ({
+      ...prev,
+      [index]: Math.max(1, getQuantity(index) - 1),
+    }));
+  };
   const fetchStore = async () => {
     try {
       const res = await axios.get(`http://localhost:5000/api/store/${id}`);
