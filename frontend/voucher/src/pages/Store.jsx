@@ -218,31 +218,60 @@ const [quantities, setQuantities] = useState({});
         )}
         
 {/* MENU (restaurants only) */}
-{store.menu?.length > 0 && (
-  <div className="store-menu">
-    <h3>المنيو</h3>
-    <div className="menu-list">
-      {store.menu.map((item, index) => (
-        <div className="menu-item" key={index}>
-          <div className="menu-item-info">
-            {item.image && (
-              <img
-                src={`/${item.image}`}
-                alt={item.name}
-                className="menu-item-thumb"
-              />
-            )}
-            <span className="menu-item-name">{item.name}</span>
+        {store.menu?.length > 0 && (
+          <div className="store-menu">
+            <h3>المنيو</h3>
+            <div className="menu-list">
+              {store.menu.map((item, index) => {
+                const qty = getQuantity(index);
+                const unitPrice = item.discounted_price ?? item.price;
+                const totalPrice = (unitPrice * qty).toFixed(2);
+
+                return (
+                  <div className="menu-item" key={index}>
+                    <div className="menu-item-info">
+                      {item.image && (
+                        <img
+                          src={`/${item.image}`}
+                          alt={item.name}
+                          className="menu-item-thumb"
+                        />
+                      )}
+                      <span className="menu-item-name">{item.name}</span>
+                    </div>
+
+                    <span className="menu-item-prices">
+                      <span className="price-before">{item.price} ج.م</span>
+                      <span className="price-after">{item.discounted_price} ج.م</span>
+                    </span>
+
+                    <div className="quantity-control">
+                      <button
+                        type="button"
+                        className="qty-btn"
+                        onClick={() => decreaseQty(index)}
+                      >
+                        −
+                      </button>
+                      <span className="qty-value">{qty}</span>
+                      <button
+                        type="button"
+                        className="qty-btn"
+                        onClick={() => increaseQty(index)}
+                      >
+                        +
+                      </button>
+                    </div>
+
+                    <div className="item-total-price">
+                      الإجمالي: {totalPrice} ج.م
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
           </div>
-          <span className="menu-item-prices">
-            <span className="price-before">{item.price} ج.م</span>
-            <span className="price-after">{item.discounted_price} ج.م</span>
-          </span>
-        </div>
-      ))}
-    </div>
-  </div>
-)}
+        )}
       </div>
 
       {/* ADDRESSES */}
