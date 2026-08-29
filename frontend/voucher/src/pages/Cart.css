@@ -239,3 +239,41 @@
   margin: 8px 0 0;
   line-height: 1.5;
 }
+
+.cart-checkout-form input[type="text"],
+.cart-checkout-form input[type="tel"] {
+  color: #111 !important;
+  background: #fff !important;
+}
+
+.cart-checkout-form input::placeholder {
+  color: #777 !important;
+  opacity: 1 !important;
+}
+
+.saved-address-item,
+.saved-address-item strong,
+.saved-address-item p {
+  color: #222 !important;
+}
+
+.transfer-instruction,
+.transfer-instruction strong {
+  color: #222 !important;
+}
+
+.transfer-number {
+  color: #111 !important;
+}
+
+.payment-option {
+  color: #222 !important;
+}
+
+.address-mode-toggle .mode-btn {
+  color: #222 !important;
+}
+
+.address-mode-toggle .mode-btn.active {
+  color: #fff !important;
+}
