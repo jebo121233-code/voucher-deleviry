@@ -8,14 +8,14 @@ import { useCart } from "../context/CartContext.jsx";
 export default function Store() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { addCard } = useCart();
+  const { addCard, addDeliveryItems } = useCart();
 
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
   const [selectedImageIndex, setSelectedImageIndex] = useState(null);
-const [quantities, setQuantities] = useState({});
+  const [quantities, setQuantities] = useState({});
 
-  const getQuantity = (index) => quantities[index] || 1;
+  const getQuantity = (index) => quantities[index] || 0;
 
   const increaseQty = (index) => {
     setQuantities((prev) => ({
@@ -27,9 +27,26 @@ const [quantities, setQuantities] = useState({});
   const decreaseQty = (index) => {
     setQuantities((prev) => ({
       ...prev,
-      [index]: Math.max(1, getQuantity(index) - 1),
+      [index]: Math.max(0, getQuantity(index) - 1),
     }));
   };
+
+  const selectedItemsCount = Object.values(quantities).reduce(
+    (sum, q) => sum + (q || 0),
+    0
+  );
+
+  const handleAddToCart = () => {
+    const selectedItems = store.menu
+      .map((item, index) => ({ ...item, qty: getQuantity(index) }))
+      .filter((item) => item.qty > 0);
+
+    if (selectedItems.length === 0) return;
+
+    addDeliveryItems(store.name, store.id, selectedItems);
+    navigate("/cart");
+  };
+
   const fetchStore = async () => {
     try {
       const res = await axios.get(`http://localhost:5000/api/store/${id}`);
@@ -119,16 +136,6 @@ const [quantities, setQuantities] = useState({});
               >
                 احصل على خصم - {store.name}
               </button>
-
-              {/* زرار الدليفري - يظهر بس في المطاعم/الكافيهات (7) والمشروبات (9) */}
-              {(store.category_id === 7 || store.category_id === 9) && (
-                <Link
-                  to={`/delivery?place=${encodeURIComponent(store.name)}&id=${store.id}`}
-                  className="delivery-btn"
-                >
-                  🛵 Delivery Order
-                </Link>
-              )}
             </div>
           </div>
         )}
@@ -216,8 +223,8 @@ const [quantities, setQuantities] = useState({});
             {store.percentage} OFF
           </div>
         )}
-        
-{/* MENU (restaurants only) */}
+
+        {/* MENU (restaurants only) */}
         {store.menu?.length > 0 && (
           <div className="store-menu">
             <h3>المنيو</h3>
@@ -263,13 +270,28 @@ const [quantities, setQuantities] = useState({});
                       </button>
                     </div>
 
-                    <div className="item-total-price">
-                      الإجمالي: {totalPrice} ج.م
-                    </div>
+                    {qty > 0 && (
+                      <div className="item-total-price">
+                        الإجمالي: {totalPrice} ج.م
+                      </div>
+                    )}
                   </div>
                 );
               })}
             </div>
+          </div>
+        )}
+
+        {/* ADD TO CART - floating button */}
+        {selectedItemsCount > 0 && (
+          <div className="floating-add-to-cart">
+            <button
+              type="button"
+              className="add-to-cart-btn"
+              onClick={handleAddToCart}
+            >
+              أضف للسلة ({selectedItemsCount})
+            </button>
           </div>
         )}
       </div>
