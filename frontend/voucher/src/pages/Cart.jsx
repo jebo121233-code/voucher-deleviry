@@ -424,7 +424,7 @@ export default function Cart() {
             <input
               type="text"
               name="addressLabel"
-              placeholder="اسم العنوان (مثال: المنزل، الشغل)"
+              placeholder="اسم الشارع ( رقم المنزل ، علامة مميزة)"
               value={form.addressLabel}
               onChange={handleChange}
             />
