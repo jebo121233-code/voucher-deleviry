@@ -88,3 +88,104 @@
   font-weight: bold;
   cursor: pointer;
 }
+
+/* --- زراير التبديل بين عنوان محفوظ / عنوان جديد --- */
+.address-mode-toggle {
+  display: flex;
+  gap: 8px;
+  margin: 10px 0;
+}
+
+.mode-btn {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid #ccc;
+  background: #fff;
+  border-radius: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.mode-btn.active {
+  background: #43a047;
+  color: #fff;
+  border-color: #43a047;
+}
+
+/* --- قايمة العناوين المحفوظة --- */
+.saved-addresses-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 10px;
+}
+
+.saved-address-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  cursor: pointer;
+  background: #fafafa;
+}
+
+.saved-address-item.selected {
+  border-color: #43a047;
+  background: #eef9ee;
+}
+
+.saved-address-item p {
+  margin: 2px 0 0;
+  font-size: 13px;
+  color: #555;
+}
+
+.delete-address-btn {
+  background: none;
+  border: none;
+  color: #e53935;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px 8px;
+}
+
+/* --- طريقة الدفع --- */
+.payment-method-section {
+  margin: 14px 0;
+}
+
+.payment-method-title {
+  font-weight: 700;
+  margin-bottom: 8px;
+}
+
+.payment-method-options {
+  display: flex;
+  gap: 10px;
+}
+
+.payment-option {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 10px;
+  cursor: pointer;
+  font-size: 14px;
+}
+
+.payment-option.selected {
+  border-color: #43a047;
+  background: #eef9ee;
+}
+
+.vodafone-note {
+  font-size: 12px;
+  color: #e65100;
+  margin-top: 6px;
+}
+
