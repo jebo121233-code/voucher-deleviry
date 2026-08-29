@@ -22,7 +22,20 @@ const CARD_FORM_ENTRIES = {
 };
 
 const CUSTOMER_STORAGE_KEY = "ve_customer";
-const VODAFONE_CASH_NUMBER = "01025311724"; // غيّرها لرقم الفودافون كاش بتاعك
+
+// ---------- رقم استلام التحويلات - عدّله برقمك الحقيقي ----------
+// العميل ممكن يحول عليه من فودافون كاش أو أي محفظة إلكترونية أو حتى إنستا باي لمحفظة موبايل - كله بيوصل لنفس الرقم
+const VODAFONE_CASH_NUMBER = "01025311724";
+
+const PAYMENT_METHODS = {
+  cash: { label: "💵 كاش عند الاستلام", needsTransfer: false },
+  wallet: {
+    label: "📱 تحويل فودافون كاش",
+    needsTransfer: true,
+    destinationLabel: "رقم فودافون كاش",
+    destinationValue: VODAFONE_CASH_NUMBER,
+  },
+};
 
 export default function Cart() {
   const navigate = useNavigate();
@@ -58,6 +71,7 @@ export default function Cart() {
     address: "",
     addressLabel: "",
     paymentMethod: "cash",
+    transactionRef: "",
   });
 
   const [addressMode, setAddressMode] = useState(
@@ -67,10 +81,12 @@ export default function Cart() {
     customer.addresses[0]?.id || null
   );
 
+  const [copied, setCopied] = useState(false);
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState("");
 
-  // لما يختار عنوان محفوظ، حدث الفورم بعنوانه
+  const selectedPayment = PAYMENT_METHODS[form.paymentMethod];
+
   useEffect(() => {
     if (addressMode === "select" && selectedAddressId) {
       const found = customer.addresses.find((a) => a.id === selectedAddressId);
@@ -84,6 +100,13 @@ export default function Cart() {
   }, [addressMode, selectedAddressId]);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const handleCopyNumber = (value) => {
+    navigator.clipboard.writeText(value).then(() => {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    });
+  };
 
   const handleDeleteAddress = (addressId) => {
     const updatedAddresses = customer.addresses.filter((a) => a.id !== addressId);
@@ -104,6 +127,12 @@ export default function Cart() {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (isEmpty) return;
+
+    if (selectedPayment.needsTransfer && !form.transactionRef.trim()) {
+      alert("من فضلك اكتب آخر 6 أرقام من عملية التحويل قبل تأكيد الطلب");
+      return;
+    }
+
     setSending(true);
 
     // ---------- حفظ/تحديث بيانات العميل ----------
@@ -130,8 +159,7 @@ export default function Cart() {
     setCustomer(updatedCustomer);
     localStorage.setItem(CUSTOMER_STORAGE_KEY, JSON.stringify(updatedCustomer));
 
-    const paymentMethodText =
-      form.paymentMethod === "vodafone_cash" ? "فودافون كاش" : "كاش عند الاستلام";
+    const paymentMethodText = selectedPayment.label;
 
     let messageParts = [
       `طلب جديد من السلة 🛒`,
@@ -174,9 +202,13 @@ export default function Cart() {
     messageParts.push(`رسوم الشحن: ${totalShippingFee} ج.م`);
     messageParts.push(`الإجمالي النهائي: ${grandTotal} ج.م`);
 
-    if (form.paymentMethod === "vodafone_cash") {
+    if (selectedPayment.needsTransfer) {
       messageParts.push("");
-      messageParts.push(`💳 الرجاء تحويل المبلغ على فودافون كاش: ${VODAFONE_CASH_NUMBER}`);
+      messageParts.push(
+        `💳 تم التحويل على: ${selectedPayment.destinationLabel} (${selectedPayment.destinationValue})`
+      );
+      messageParts.push(`آخر 6 أرقام من عملية التحويل: ${form.transactionRef}`);
+      messageParts.push("⚠️ برجاء إرسال سكرين شوت إثبات التحويل هنا على الواتساب");
     }
 
     const whatsappMessage = messageParts.join("\n");
@@ -191,6 +223,8 @@ export default function Cart() {
       whatsapp: form.whatsapp,
       address: form.address,
       payment_method: paymentMethodText,
+      transaction_ref: selectedPayment.needsTransfer ? form.transactionRef : "",
+      payment_status: selectedPayment.needsTransfer ? "بانتظار تأكيد التحويل" : "كاش عند الاستلام",
       restaurant: hasDelivery ? cart.restaurant : "",
       delivery_items: deliveryItemsText,
       delivery_subtotal_before: hasDelivery ? deliverySubtotalBefore : "",
@@ -214,7 +248,6 @@ export default function Cart() {
       }).catch((err) => console.error("خطأ في الاتصال بالسيرفر:", err));
     }
 
-    // إرسال البيانات لجوجل فورم (Card Orders)
     const cardTierText = cart.cardItems
       .map((c) => `${c.name} × ${c.qty}`)
       .join(", ");
@@ -241,9 +274,9 @@ export default function Cart() {
 
     navigator.sendBeacon(CARD_FORM_URL, formData);
 
-    setMessage("✅ جارٍ تحويلك للواتساب...");
+    setMessage("✅ جارٍ تحويلك للواتساب... متنساش تبعت سكرين شوت التحويل لو دفعت أونلاين");
     clearCart();
-    setTimeout(() => navigate("/"), 1500);
+    setTimeout(() => navigate("/"), 2000);
   };
 
   if (isEmpty) {
@@ -410,45 +443,61 @@ export default function Cart() {
         <div className="payment-method-section">
           <p className="payment-method-title">طريقة الدفع</p>
           <div className="payment-method-options">
-            <label
-              className={
-                form.paymentMethod === "cash"
-                  ? "payment-option selected"
-                  : "payment-option"
-              }
-            >
-              <input
-                type="radio"
-                name="paymentMethod"
-                value="cash"
-                checked={form.paymentMethod === "cash"}
-                onChange={handleChange}
-              />
-              💵 كاش عند الاستلام
-            </label>
-
-            <label
-              className={
-                form.paymentMethod === "vodafone_cash"
-                  ? "payment-option selected"
-                  : "payment-option"
-              }
-            >
-              <input
-                type="radio"
-                name="paymentMethod"
-                value="vodafone_cash"
-                checked={form.paymentMethod === "vodafone_cash"}
-                onChange={handleChange}
-              />
-              📱 فودافون كاش
-            </label>
+            {Object.entries(PAYMENT_METHODS).map(([key, method]) => (
+              <label
+                key={key}
+                className={
+                  form.paymentMethod === key
+                    ? "payment-option selected"
+                    : "payment-option"
+                }
+              >
+                <input
+                  type="radio"
+                  name="paymentMethod"
+                  value={key}
+                  checked={form.paymentMethod === key}
+                  onChange={handleChange}
+                />
+                {method.label}
+              </label>
+            ))}
           </div>
 
-          {form.paymentMethod === "vodafone_cash" && (
-            <p className="vodafone-note">
-              هيتم إرسال رقم فودافون كاش للتحويل عليه بعد تأكيد الطلب
-            </p>
+          {/* تفاصيل التحويل - تظهر بس لو الطريقة محتاجة تحويل */}
+          {selectedPayment.needsTransfer && (
+            <div className="transfer-box">
+              <p className="transfer-instruction">
+                حوّل مبلغ <strong>{grandTotal} ج.م</strong> على الرقم ده (من فودافون كاش أو إنستا باي أو أي محفظة إلكترونية):
+              </p>
+
+              <div className="transfer-number-row">
+                <span className="transfer-number">
+                  {selectedPayment.destinationLabel}: {selectedPayment.destinationValue}
+                </span>
+                <button
+                  type="button"
+                  className="copy-btn"
+                  onClick={() => handleCopyNumber(selectedPayment.destinationValue)}
+                >
+                  {copied ? "✅ اتنسخ" : "نسخ"}
+                </button>
+              </div>
+
+              <input
+                type="text"
+                name="transactionRef"
+                placeholder="آخر 6 أرقام من عملية التحويل"
+                value={form.transactionRef}
+                onChange={handleChange}
+                maxLength={6}
+                required
+              />
+
+              <p className="screenshot-warning">
+                ⚠️ لازم تبعت <strong>سكرين شوت</strong> إثبات التحويل على الواتساب فور إرسال الطلب، وإلا الطلب مش هيتأكد
+              </p>
+            </div>
           )}
         </div>
 
