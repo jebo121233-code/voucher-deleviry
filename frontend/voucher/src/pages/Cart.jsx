@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import "./auth.css";
 import "./Delivery.css";
@@ -21,6 +21,9 @@ const CARD_FORM_ENTRIES = {
   status: "entry.1092939406",
 };
 
+const CUSTOMER_STORAGE_KEY = "ve_customer";
+const VODAFONE_CASH_NUMBER = "01025311724"; // غيّرها لرقم الفودافون كاش بتاعك
+
 export default function Cart() {
   const navigate = useNavigate();
   const {
@@ -39,11 +42,62 @@ export default function Cart() {
     itemsCount,
   } = useCart();
 
-  const [form, setForm] = useState({ name: "", whatsapp: "", address: "" });
+  // ---------- بيانات العميل المحفوظة ----------
+  const [customer, setCustomer] = useState(() => {
+    try {
+      const saved = localStorage.getItem(CUSTOMER_STORAGE_KEY);
+      return saved ? JSON.parse(saved) : { name: "", phone: "", addresses: [] };
+    } catch {
+      return { name: "", phone: "", addresses: [] };
+    }
+  });
+
+  const [form, setForm] = useState({
+    name: customer.name || "",
+    whatsapp: customer.phone || "",
+    address: "",
+    addressLabel: "",
+    paymentMethod: "cash",
+  });
+
+  const [addressMode, setAddressMode] = useState(
+    customer.addresses.length > 0 ? "select" : "new"
+  );
+  const [selectedAddressId, setSelectedAddressId] = useState(
+    customer.addresses[0]?.id || null
+  );
+
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState("");
 
+  // لما يختار عنوان محفوظ، حدث الفورم بعنوانه
+  useEffect(() => {
+    if (addressMode === "select" && selectedAddressId) {
+      const found = customer.addresses.find((a) => a.id === selectedAddressId);
+      if (found) {
+        setForm((prev) => ({ ...prev, address: found.address }));
+      }
+    }
+    if (addressMode === "new") {
+      setForm((prev) => ({ ...prev, address: "", addressLabel: "" }));
+    }
+  }, [addressMode, selectedAddressId]);
+
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
+
+  const handleDeleteAddress = (addressId) => {
+    const updatedAddresses = customer.addresses.filter((a) => a.id !== addressId);
+    const updatedCustomer = { ...customer, addresses: updatedAddresses };
+    setCustomer(updatedCustomer);
+    localStorage.setItem(CUSTOMER_STORAGE_KEY, JSON.stringify(updatedCustomer));
+
+    if (updatedAddresses.length === 0) {
+      setAddressMode("new");
+      setSelectedAddressId(null);
+    } else if (selectedAddressId === addressId) {
+      setSelectedAddressId(updatedAddresses[0].id);
+    }
+  };
 
   const isEmpty = itemsCount === 0;
 
@@ -52,7 +106,41 @@ export default function Cart() {
     if (isEmpty) return;
     setSending(true);
 
-    let messageParts = [`طلب جديد من السلة 🛒`, `الاسم: ${form.name}`, `رقم الواتساب: ${form.whatsapp}`, `العنوان: ${form.address}`, ""];
+    // ---------- حفظ/تحديث بيانات العميل ----------
+    let updatedAddresses = [...customer.addresses];
+
+    if (addressMode === "new" && form.address.trim()) {
+      const alreadyExists = updatedAddresses.some(
+        (a) => a.address.trim() === form.address.trim()
+      );
+      if (!alreadyExists) {
+        updatedAddresses.push({
+          id: Date.now(),
+          label: form.addressLabel.trim() || "عنوان جديد",
+          address: form.address.trim(),
+        });
+      }
+    }
+
+    const updatedCustomer = {
+      name: form.name,
+      phone: form.whatsapp,
+      addresses: updatedAddresses,
+    };
+    setCustomer(updatedCustomer);
+    localStorage.setItem(CUSTOMER_STORAGE_KEY, JSON.stringify(updatedCustomer));
+
+    const paymentMethodText =
+      form.paymentMethod === "vodafone_cash" ? "فودافون كاش" : "كاش عند الاستلام";
+
+    let messageParts = [
+      `طلب جديد من السلة 🛒`,
+      `الاسم: ${form.name}`,
+      `رقم الواتساب: ${form.whatsapp}`,
+      `العنوان: ${form.address}`,
+      `طريقة الدفع: ${paymentMethodText}`,
+      "",
+    ];
 
     let deliveryItemsText = "";
     if (hasDelivery) {
@@ -71,19 +159,25 @@ export default function Cart() {
     let cardsText = "";
     if (cart.cardItems.length > 0) {
       messageParts.push(`--- كروت الخصم ---`);
-     cardsText = cart.cardItems
+      cardsText = cart.cardItems
         .map((c) => `${c.name} × ${c.qty} = ${c.price * c.qty} ج.م`)
         .join(" | ");
       cart.cardItems.forEach((c) => {
-       messageParts.push(`- ${c.name} × ${c.qty} = ${c.price * c.qty} ج.م`);
+        messageParts.push(`- ${c.name} × ${c.qty} = ${c.price * c.qty} ج.م`);
       });
       messageParts.push("");
     }
-const totalShippingFee =
+
+    const totalShippingFee =
       (hasDelivery ? deliveryFeeTotal : 0) + (cart.cardItems.length > 0 ? 10 : 0);
 
     messageParts.push(`رسوم الشحن: ${totalShippingFee} ج.م`);
     messageParts.push(`الإجمالي النهائي: ${grandTotal} ج.م`);
+
+    if (form.paymentMethod === "vodafone_cash") {
+      messageParts.push("");
+      messageParts.push(`💳 الرجاء تحويل المبلغ على فودافون كاش: ${VODAFONE_CASH_NUMBER}`);
+    }
 
     const whatsappMessage = messageParts.join("\n");
 
@@ -96,6 +190,7 @@ const totalShippingFee =
       first_name: form.name,
       whatsapp: form.whatsapp,
       address: form.address,
+      payment_method: paymentMethodText,
       restaurant: hasDelivery ? cart.restaurant : "",
       delivery_items: deliveryItemsText,
       delivery_subtotal_before: hasDelivery ? deliverySubtotalBefore : "",
@@ -144,7 +239,7 @@ const totalShippingFee =
     formData.append(CARD_FORM_ENTRIES.source, "");
     formData.append(CARD_FORM_ENTRIES.status, "");
 
-  navigator.sendBeacon(CARD_FORM_URL, formData);
+    navigator.sendBeacon(CARD_FORM_URL, formData);
 
     setMessage("✅ جارٍ تحويلك للواتساب...");
     clearCart();
@@ -184,23 +279,23 @@ const totalShippingFee =
 
       {cart.cardItems.length > 0 && (
         <div className="cart-section">
-         <h3>💳 كروت الخصم</h3>
+          <h3>💳 كروت الخصم</h3>
           <div
-  className="cart-note-box"
-  style={{
-    background: "#fff8e1",
-    border: "1px solid #ffe082",
-    borderRadius: "8px",
-    padding: "10px 14px",
-    fontSize: "14px",
-    color: "#7a5c00",
-    marginBottom: "12px",
-  }}
->
-  ℹ️  الكارت بيديك خصم على اسم المكان اللي اخترته + 6 أماكن تانية كمان
-اشتري اكتر وفر اكتر
+            className="cart-note-box"
+            style={{
+              background: "#fff8e1",
+              border: "1px solid #ffe082",
+              borderRadius: "8px",
+              padding: "10px 14px",
+              fontSize: "14px",
+              color: "#7a5c00",
+              marginBottom: "12px",
+            }}
+          >
+            ℹ️  الكارت بيديك خصم على اسم المكان اللي اخترته + 6 أماكن تانية كمان
+            اشتري اكتر وفر اكتر
           </div>
-            {cart.cardItems.map((c) => (
+          {cart.cardItems.map((c) => (
             <div className="cart-line" key={c.id}>
               <span>{c.name}</span>
               <div className="qty-control">
@@ -222,10 +317,142 @@ const totalShippingFee =
 
       <form onSubmit={handleSubmit} className="cart-checkout-form">
         <h3>بيانات التوصيل</h3>
-        <input type="text" name="name" placeholder="الاسم" value={form.name} onChange={handleChange} required />
-        <input type="tel" name="whatsapp" placeholder="رقم الواتساب" value={form.whatsapp} onChange={handleChange} required />
-        <input type="text" name="address" placeholder="العنوان بالتفصيل" value={form.address} onChange={handleChange} required />
-        <button type="submit" disabled={sending}>أرسل الطلب على واتساب</button>
+
+        <input
+          type="text"
+          name="name"
+          placeholder="الاسم"
+          value={form.name}
+          onChange={handleChange}
+          required
+        />
+        <input
+          type="tel"
+          name="whatsapp"
+          placeholder="رقم الواتساب"
+          value={form.whatsapp}
+          onChange={handleChange}
+          required
+        />
+
+        {/* ---------- العناوين ---------- */}
+        {customer.addresses.length > 0 && (
+          <div className="address-mode-toggle">
+            <button
+              type="button"
+              className={addressMode === "select" ? "mode-btn active" : "mode-btn"}
+              onClick={() => setAddressMode("select")}
+            >
+              عنوان محفوظ
+            </button>
+            <button
+              type="button"
+              className={addressMode === "new" ? "mode-btn active" : "mode-btn"}
+              onClick={() => setAddressMode("new")}
+            >
+              + عنوان جديد
+            </button>
+          </div>
+        )}
+
+        {addressMode === "select" && customer.addresses.length > 0 && (
+          <div className="saved-addresses-list">
+            {customer.addresses.map((addr) => (
+              <div
+                key={addr.id}
+                className={
+                  selectedAddressId === addr.id
+                    ? "saved-address-item selected"
+                    : "saved-address-item"
+                }
+                onClick={() => setSelectedAddressId(addr.id)}
+              >
+                <div>
+                  <strong>{addr.label}</strong>
+                  <p>{addr.address}</p>
+                </div>
+                <button
+                  type="button"
+                  className="delete-address-btn"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDeleteAddress(addr.id);
+                  }}
+                >
+                  ✕
+                </button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {addressMode === "new" && (
+          <>
+            <input
+              type="text"
+              name="addressLabel"
+              placeholder="اسم العنوان (مثال: المنزل، الشغل)"
+              value={form.addressLabel}
+              onChange={handleChange}
+            />
+            <input
+              type="text"
+              name="address"
+              placeholder="العنوان بالتفصيل"
+              value={form.address}
+              onChange={handleChange}
+              required
+            />
+          </>
+        )}
+
+        {/* ---------- طريقة الدفع ---------- */}
+        <div className="payment-method-section">
+          <p className="payment-method-title">طريقة الدفع</p>
+          <div className="payment-method-options">
+            <label
+              className={
+                form.paymentMethod === "cash"
+                  ? "payment-option selected"
+                  : "payment-option"
+              }
+            >
+              <input
+                type="radio"
+                name="paymentMethod"
+                value="cash"
+                checked={form.paymentMethod === "cash"}
+                onChange={handleChange}
+              />
+              💵 كاش عند الاستلام
+            </label>
+
+            <label
+              className={
+                form.paymentMethod === "vodafone_cash"
+                  ? "payment-option selected"
+                  : "payment-option"
+              }
+            >
+              <input
+                type="radio"
+                name="paymentMethod"
+                value="vodafone_cash"
+                checked={form.paymentMethod === "vodafone_cash"}
+                onChange={handleChange}
+              />
+              📱 فودافون كاش
+            </label>
+          </div>
+
+          {form.paymentMethod === "vodafone_cash" && (
+            <p className="vodafone-note">
+              هيتم إرسال رقم فودافون كاش للتحويل عليه بعد تأكيد الطلب
+            </p>
+          )}
+        </div>
+
+        <button type="submit" disabled={sending}>تأكيد الطلب</button>
       </form>
 
       {message && <p style={{ textAlign: "center" }}>{message}</p>}
