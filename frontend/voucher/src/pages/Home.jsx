@@ -35,7 +35,7 @@ export default function Home() {
       setStores(res.data.stores);
     } catch (err) {
       if (categoryId) {
-        setStores(fakeStores.filter((s) => s.category_ids.includes(parselnt(categoryId)));
+        setStores(fakeStores.filter((s) => s.category_ids.includes(parseInt(categoryId))));
       } else {
         setStores(fakeStores);
       }
