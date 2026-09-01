@@ -65,7 +65,7 @@ export const shops = [
         id: "1",
         name: "View Optics",
         description: "Stylish and high-quality sun and optical glasses designed for comfort, protection, and clear vision.",
-        category_ids: [4],
+        category_ids:[4],
         percentage: "25%",
         status: "Active",
         addresses: ["شارع توت عنخ امون مع الحلو", "شارع حسن رضوان مع سعيد امام بون بون"],
