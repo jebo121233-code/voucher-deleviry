@@ -24,7 +24,7 @@ export default function Store() {
     } catch (err) {
       // Use fake stores if backend fails
       if (categoryId) {
-        setStores(fakeStores.filter((s) => s.category_ids.includes(parselnt(categoryId)));
+        setStores(fakeStores.filter((s) => s.category_ids.includes(parseInt(categoryId))));
       } else {
         setStores(fakeStores);
       }
