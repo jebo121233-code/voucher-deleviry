@@ -107,6 +107,7 @@ export default function Register() {
               border: "none",
               cursor: "pointer",
               fontSize: "18px",
+              color: "black",
             }}
           >
             {showPassword ? "🙈" : "👁️"}
@@ -135,6 +136,7 @@ export default function Register() {
               border: "none",
               cursor: "pointer",
               fontSize: "18px",
+              color: "black",
             }}
           >
             {showConfirm ? "🙈" : "👁️"}
