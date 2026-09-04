@@ -1,63 +1,71 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import "./auth.css";
+import { CART_SCRIPT_URL } from "../data/data.js";
+import { useAuth } from "../context/AuthContext.jsx";
 
 export default function Login() {
-  const [form, setForm] = useState({ email: "", password: "" });
+  const [form, setForm] = useState({ phone: "", password: "" });
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
+  const { login } = useAuth();
 
-  const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
-  };
+  const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setError("");
+    setLoading(true);
     try {
-      const res = await axios.post("http://localhost:5000/api/user/login", form);
-      alert("Login successful!");
-      console.log(res.data);
-      // Save JWT token in localStorage
-      localStorage.setItem("token", res.data.token);
-      navigate("/"); // redirect to home
+      const res = await fetch(CART_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "login", ...form }),
+      });
+      const data = await res.json();
+      if (!data.success) {
+        setError(data.error || "حصل خطأ");
+      } else {
+        login(data.user);
+        navigate("/");
+      }
     } catch (err) {
-      console.log(err.response?.data || err.message);
-      alert(err.response?.data?.error || "Login failed");
+      setError("مشكلة في الاتصال، حاول تاني");
+    } finally {
+      setLoading(false);
     }
   };
 
   return (
     <div className="auth-container">
-      <h2>Login</h2>
+      <h2>تسجيل الدخول</h2>
       <form onSubmit={handleSubmit}>
         <input
-          type="email"
-          name="email"
-          placeholder="Email"
+          type="tel"
+          name="phone"
+          placeholder="رقم الموبايل"
           onChange={handleChange}
           required
         />
         <input
           type="password"
           name="password"
-          placeholder="Password"
+          placeholder="الباسورد"
           onChange={handleChange}
           required
         />
-        <button type="submit">Login</button>
+        <button type="submit" disabled={loading}>
+          {loading ? "جارٍ الدخول..." : "دخول"}
+        </button>
       </form>
-      <p
-        className="signup-link"
-      >
-        Don't have an account?
-      </p>
+
+      {error && <p style={{ color: "red" }}>{error}</p>}
 
       <div className="signUp">
-      <button
-        onClick={() => navigate("/signup")}
-      >
-        Create Account
-      </button>
+        <button onClick={() => navigate("/register")}>
+          مفيش حساب؟ سجل واحد
+        </button>
       </div>
     </div>
   );
