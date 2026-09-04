@@ -1,7 +1,7 @@
 // رسوم ثابتة تتحسب تلقائي في الحاسبة
 export const DELIVERY_FEE = 25; // رسوم شحن الدليفري
 export const CARD_SHIPPING_FEE = 10; // رسوم شحن كارت الخصم
-export const CART_SCRIPT_URL = "PASTE_YOUR_CART_APPS_SCRIPT_URL_HERE";
+export const CART_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz4iYTup23ZNxkm-yzfbKQF35LDG2_RwdDOv_SCGbYG6sTH-bkdXFXVf4bChyV4iDUF/exec";
 export const WHATSAPP_NUMBER = "201025311724";
 
 // كروت الخصم اللي العميل يقدر يطلبها من الهوم مباشرة
