@@ -4,6 +4,7 @@ import "./auth.css";
 import "./Delivery.css";
 import "./Cart.css";
 import { useCart } from "../context/CartContext.jsx";
+import { useAuth } from "../context/AuthContext.jsx";
 import { CART_SCRIPT_URL, WHATSAPP_NUMBER } from "../data/data.js";
 
 const CARD_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfL4bWVRHsgjOa2I5J2RC38pF2olaUMWsVghwxfuz9MrJyslA/formResponse";
@@ -21,10 +22,6 @@ const CARD_FORM_ENTRIES = {
   status: "entry.1092939406",
 };
 
-const CUSTOMER_STORAGE_KEY = "ve_customer";
-
-// ---------- رقم استلام التحويلات - عدّله برقمك الحقيقي ----------
-// العميل ممكن يحول عليه من فودافون كاش أو أي محفظة إلكترونية أو حتى إنستا باي لمحفظة موبايل - كله بيوصل لنفس الرقم
 const VODAFONE_CASH_NUMBER = "01025311724";
 
 const PAYMENT_METHODS = {
@@ -39,48 +36,26 @@ const PAYMENT_METHODS = {
 
 export default function Cart() {
   const navigate = useNavigate();
+  const { user, isLoggedIn, updateAddresses } = useAuth();
   const {
-    cart,
-    removeDeliveryItems,
-    updateCardQty,
-    removeCard,
-    clearCart,
-    deliverySubtotalBefore,
-    deliverySubtotalAfter,
-    hasDelivery,
-    deliveryFeeTotal,
-    cardsSubtotal,
-    cardsShippingTotal,
-    grandTotal,
-    itemsCount,
+    cart, removeDeliveryItems, updateCardQty, removeCard, clearCart,
+    deliverySubtotalBefore, deliverySubtotalAfter, hasDelivery, deliveryFeeTotal,
+    cardsSubtotal, cardsShippingTotal, grandTotal, itemsCount,
   } = useCart();
 
-  // ---------- بيانات العميل المحفوظة ----------
-  const [customer, setCustomer] = useState(() => {
-    try {
-      const saved = localStorage.getItem(CUSTOMER_STORAGE_KEY);
-      return saved ? JSON.parse(saved) : { name: "", phone: "", addresses: [] };
-    } catch {
-      return { name: "", phone: "", addresses: [] };
-    }
-  });
+  const addresses = user?.addresses || [];
 
   const [form, setForm] = useState({
-    name: customer.name || "",
-    whatsapp: customer.phone || "",
+    name: user?.name || "",
+    whatsapp: user?.phone || "",
     address: "",
     addressLabel: "",
     paymentMethod: "cash",
     transactionRef: "",
   });
 
-  const [addressMode, setAddressMode] = useState(
-    customer.addresses.length > 0 ? "select" : "new"
-  );
-  const [selectedAddressId, setSelectedAddressId] = useState(
-    customer.addresses[0]?.id || null
-  );
-
+  const [addressMode, setAddressMode] = useState(addresses.length > 0 ? "select" : "new");
+  const [selectedAddressId, setSelectedAddressId] = useState(addresses[0]?.id || null);
   const [copied, setCopied] = useState(false);
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState("");
@@ -89,15 +64,31 @@ export default function Cart() {
 
   useEffect(() => {
     if (addressMode === "select" && selectedAddressId) {
-      const found = customer.addresses.find((a) => a.id === selectedAddressId);
-      if (found) {
-        setForm((prev) => ({ ...prev, address: found.address }));
-      }
+      const found = addresses.find((a) => a.id === selectedAddressId);
+      if (found) setForm((prev) => ({ ...prev, address: found.address }));
     }
     if (addressMode === "new") {
       setForm((prev) => ({ ...prev, address: "", addressLabel: "" }));
     }
   }, [addressMode, selectedAddressId]);
+
+  // 🔒 لازم تسجيل دخول عشان تقدر تطلب
+  if (!isLoggedIn) {
+    return (
+      <div className="auth-container">
+        <h2>لازم تسجل دخول الأول 🔒</h2>
+        <p style={{ textAlign: "center" }}>
+          عشان نحافظ على نقاطك وتاريخ أوردراتك، محتاجين تسجل دخول أو تعمل حساب قبل ما تكمل الطلب.
+          <br />
+          متقلقش، سلتك محفوظة وهترجعلك بعد التسجيل.
+        </p>
+        <div className="signUp" style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
+          <button onClick={() => navigate("/login")}>تسجيل الدخول</button>
+          <button onClick={() => navigate("/register")}>إنشاء حساب</button>
+        </div>
+      </div>
+    );
+  }
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
 
@@ -109,16 +100,13 @@ export default function Cart() {
   };
 
   const handleDeleteAddress = (addressId) => {
-    const updatedAddresses = customer.addresses.filter((a) => a.id !== addressId);
-    const updatedCustomer = { ...customer, addresses: updatedAddresses };
-    setCustomer(updatedCustomer);
-    localStorage.setItem(CUSTOMER_STORAGE_KEY, JSON.stringify(updatedCustomer));
-
-    if (updatedAddresses.length === 0) {
+    const updated = addresses.filter((a) => a.id !== addressId);
+    updateAddresses(updated);
+    if (updated.length === 0) {
       setAddressMode("new");
       setSelectedAddressId(null);
     } else if (selectedAddressId === addressId) {
-      setSelectedAddressId(updatedAddresses[0].id);
+      setSelectedAddressId(updated[0].id);
     }
   };
 
@@ -135,29 +123,17 @@ export default function Cart() {
 
     setSending(true);
 
-    // ---------- حفظ/تحديث بيانات العميل ----------
-    let updatedAddresses = [...customer.addresses];
-
+    // ---------- حفظ عنوان جديد لو المستخدم دخل عنوان جديد ----------
     if (addressMode === "new" && form.address.trim()) {
-      const alreadyExists = updatedAddresses.some(
-        (a) => a.address.trim() === form.address.trim()
-      );
+      const alreadyExists = addresses.some((a) => a.address.trim() === form.address.trim());
       if (!alreadyExists) {
-        updatedAddresses.push({
-          id: Date.now(),
-          label: form.addressLabel.trim() || "عنوان جديد",
-          address: form.address.trim(),
-        });
+        const updated = [
+          ...addresses,
+          { id: Date.now(), label: form.addressLabel.trim() || "عنوان جديد", address: form.address.trim() },
+        ];
+        updateAddresses(updated);
       }
     }
-
-    const updatedCustomer = {
-      name: form.name,
-      phone: form.whatsapp,
-      addresses: updatedAddresses,
-    };
-    setCustomer(updatedCustomer);
-    localStorage.setItem(CUSTOMER_STORAGE_KEY, JSON.stringify(updatedCustomer));
 
     const paymentMethodText = selectedPayment.label;
 
@@ -173,9 +149,7 @@ export default function Cart() {
     let deliveryItemsText = "";
     if (hasDelivery) {
       messageParts.push(`--- دليفري من ${cart.restaurant} ---`);
-      deliveryItemsText = cart.deliveryItems
-        .map((i) => `${i.name} × ${i.qty} = ${i.discounted_price * i.qty} ج.م`)
-        .join(" | ");
+      deliveryItemsText = cart.deliveryItems.map((i) => `${i.name} × ${i.qty} = ${i.discounted_price * i.qty} ج.م`).join(" | ");
       cart.deliveryItems.forEach((i) => {
         messageParts.push(`- ${i.name} × ${i.qty} = ${i.discounted_price * i.qty} ج.م`);
       });
@@ -187,36 +161,25 @@ export default function Cart() {
     let cardsText = "";
     if (cart.cardItems.length > 0) {
       messageParts.push(`--- كروت الخصم ---`);
-      cardsText = cart.cardItems
-        .map((c) => `${c.name} × ${c.qty} = ${c.price * c.qty} ج.م`)
-        .join(" | ");
+      cardsText = cart.cardItems.map((c) => `${c.name} × ${c.qty} = ${c.price * c.qty} ج.م`).join(" | ");
       cart.cardItems.forEach((c) => {
         messageParts.push(`- ${c.name} × ${c.qty} = ${c.price * c.qty} ج.م`);
       });
       messageParts.push("");
     }
 
-    const totalShippingFee =
-      (hasDelivery ? deliveryFeeTotal : 0) + (cart.cardItems.length > 0 ? 10 : 0);
-
+    const totalShippingFee = (hasDelivery ? deliveryFeeTotal : 0) + (cart.cardItems.length > 0 ? 10 : 0);
     messageParts.push(`رسوم الشحن: ${totalShippingFee} ج.م`);
     messageParts.push(`الإجمالي النهائي: ${grandTotal} ج.م`);
 
     if (selectedPayment.needsTransfer) {
       messageParts.push("");
-      messageParts.push(
-        `💳 تم التحويل على: ${selectedPayment.destinationLabel} (${selectedPayment.destinationValue})`
-      );
+      messageParts.push(`💳 تم التحويل على: ${selectedPayment.destinationLabel} (${selectedPayment.destinationValue})`);
       messageParts.push(`آخر 6 أرقام من عملية التحويل: ${form.transactionRef}`);
       messageParts.push("⚠️ برجاء إرسال سكرين شوت إثبات التحويل هنا على الواتساب");
     }
 
-    const whatsappMessage = messageParts.join("\n");
-
-    window.open(
-      `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(whatsappMessage)}`,
-      "_blank"
-    );
+    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(messageParts.join("\n"))}`, "_blank");
 
     const orderData = {
       first_name: form.name,
@@ -238,7 +201,6 @@ export default function Cart() {
 
     const payload = new Blob([JSON.stringify(orderData)], { type: "text/plain;charset=utf-8" });
     const sent = navigator.sendBeacon(CART_SCRIPT_URL, payload);
-
     if (!sent) {
       fetch(CART_SCRIPT_URL, {
         method: "POST",
@@ -248,30 +210,20 @@ export default function Cart() {
       }).catch((err) => console.error("خطأ في الاتصال بالسيرفر:", err));
     }
 
-    const cardTierText = cart.cardItems
-      .map((c) => `${c.name} × ${c.qty}`)
-      .join(", ");
-
+    const cardTierText = cart.cardItems.map((c) => `${c.name} × ${c.qty}`).join(", ");
     const cardStoresText = cart.cardItems.map((c) => c.store || c.name).join(", ");
 
     const formData = new URLSearchParams();
     formData.append(CARD_FORM_ENTRIES.name, form.name);
     formData.append(CARD_FORM_ENTRIES.phone, form.whatsapp);
     formData.append(CARD_FORM_ENTRIES.address, form.address);
-    formData.append(
-      CARD_FORM_ENTRIES.store,
-      hasDelivery ? cart.restaurant : cardStoresText
-    );
+    formData.append(CARD_FORM_ENTRIES.store, hasDelivery ? cart.restaurant : cardStoresText);
     formData.append(CARD_FORM_ENTRIES.cardTier, cardTierText);
     formData.append(CARD_FORM_ENTRIES.cardPrice, cart.cardItems.length > 0 ? cardsSubtotal : "");
-    formData.append(
-      CARD_FORM_ENTRIES.shippingFee,
-      (cart.cardItems.length > 0 ? cardsShippingTotal : 0) + (hasDelivery ? deliveryFeeTotal : 0)
-    );
+    formData.append(CARD_FORM_ENTRIES.shippingFee, (cart.cardItems.length > 0 ? cardsShippingTotal : 0) + (hasDelivery ? deliveryFeeTotal : 0));
     formData.append(CARD_FORM_ENTRIES.total, grandTotal);
     formData.append(CARD_FORM_ENTRIES.source, "");
     formData.append(CARD_FORM_ENTRIES.status, "");
-
     navigator.sendBeacon(CARD_FORM_URL, formData);
 
     setMessage("✅ جارٍ تحويلك للواتساب... متنساش تبعت سكرين شوت التحويل لو دفعت أونلاين");
@@ -313,20 +265,8 @@ export default function Cart() {
       {cart.cardItems.length > 0 && (
         <div className="cart-section">
           <h3>💳 كروت الخصم</h3>
-          <div
-            className="cart-note-box"
-            style={{
-              background: "#fff8e1",
-              border: "1px solid #ffe082",
-              borderRadius: "8px",
-              padding: "10px 14px",
-              fontSize: "14px",
-              color: "#7a5c00",
-              marginBottom: "12px",
-            }}
-          >
-            ℹ️  الكارت بيديك خصم على اسم المكان اللي اخترته + 6 أماكن تانية كمان
-            اشتري اكتر وفر اكتر
+          <div className="cart-note-box" style={{ background: "#fff8e1", border: "1px solid #ffe082", borderRadius: "8px", padding: "10px 14px", fontSize: "14px", color: "#7a5c00", marginBottom: "12px" }}>
+            ℹ️ الكارت بيديك خصم على اسم المكان اللي اخترته + 6 أماكن تانية كمان اشتري اكتر وفر اكتر
           </div>
           {cart.cardItems.map((c) => (
             <div className="cart-line" key={c.id}>
@@ -351,69 +291,25 @@ export default function Cart() {
       <form onSubmit={handleSubmit} className="cart-checkout-form">
         <h3>بيانات التوصيل</h3>
 
-        <input
-          type="text"
-          name="name"
-          placeholder="الاسم"
-          value={form.name}
-          onChange={handleChange}
-          required
-        />
-        <input
-          type="tel"
-          name="whatsapp"
-          placeholder="رقم الواتساب"
-          value={form.whatsapp}
-          onChange={handleChange}
-          required
-        />
+        <input type="text" name="name" placeholder="الاسم" value={form.name} onChange={handleChange} required />
+        <input type="tel" name="whatsapp" placeholder="رقم الواتساب" value={form.whatsapp} onChange={handleChange} required />
 
-        {/* ---------- العناوين ---------- */}
-        {customer.addresses.length > 0 && (
+        {addresses.length > 0 && (
           <div className="address-mode-toggle">
-            <button
-              type="button"
-              className={addressMode === "select" ? "mode-btn active" : "mode-btn"}
-              onClick={() => setAddressMode("select")}
-            >
-              عنوان محفوظ
-            </button>
-            <button
-              type="button"
-              className={addressMode === "new" ? "mode-btn active" : "mode-btn"}
-              onClick={() => setAddressMode("new")}
-            >
-              + عنوان جديد
-            </button>
+            <button type="button" className={addressMode === "select" ? "mode-btn active" : "mode-btn"} onClick={() => setAddressMode("select")}>عنوان محفوظ</button>
+            <button type="button" className={addressMode === "new" ? "mode-btn active" : "mode-btn"} onClick={() => setAddressMode("new")}>+ عنوان جديد</button>
           </div>
         )}
 
-        {addressMode === "select" && customer.addresses.length > 0 && (
+        {addressMode === "select" && addresses.length > 0 && (
           <div className="saved-addresses-list">
-            {customer.addresses.map((addr) => (
-              <div
-                key={addr.id}
-                className={
-                  selectedAddressId === addr.id
-                    ? "saved-address-item selected"
-                    : "saved-address-item"
-                }
-                onClick={() => setSelectedAddressId(addr.id)}
-              >
+            {addresses.map((addr) => (
+              <div key={addr.id} className={selectedAddressId === addr.id ? "saved-address-item selected" : "saved-address-item"} onClick={() => setSelectedAddressId(addr.id)}>
                 <div>
                   <strong>{addr.label}</strong>
                   <p>{addr.address}</p>
                 </div>
-                <button
-                  type="button"
-                  className="delete-address-btn"
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteAddress(addr.id);
-                  }}
-                >
-                  ✕
-                </button>
+                <button type="button" className="delete-address-btn" onClick={(e) => { e.stopPropagation(); handleDeleteAddress(addr.id); }}>✕</button>
               </div>
             ))}
           </div>
@@ -421,82 +317,35 @@ export default function Cart() {
 
         {addressMode === "new" && (
           <>
-            <input
-              type="text"
-              name="addressLabel"
-              placeholder="اسم الشارع ( رقم المنزل ، علامة مميزة)"
-              value={form.addressLabel}
-              onChange={handleChange}
-            />
-            <input
-              type="text"
-              name="address"
-              placeholder="العنوان بالتفصيل"
-              value={form.address}
-              onChange={handleChange}
-              required
-            />
+            <input type="text" name="addressLabel" placeholder="اسم الشارع ( رقم المنزل ، علامة مميزة)" value={form.addressLabel} onChange={handleChange} />
+            <input type="text" name="address" placeholder="العنوان بالتفصيل" value={form.address} onChange={handleChange} required />
           </>
         )}
 
-        {/* ---------- طريقة الدفع ---------- */}
         <div className="payment-method-section">
           <p className="payment-method-title">طريقة الدفع</p>
           <div className="payment-method-options">
             {Object.entries(PAYMENT_METHODS).map(([key, method]) => (
-              <label
-                key={key}
-                className={
-                  form.paymentMethod === key
-                    ? "payment-option selected"
-                    : "payment-option"
-                }
-              >
-                <input
-                  type="radio"
-                  name="paymentMethod"
-                  value={key}
-                  checked={form.paymentMethod === key}
-                  onChange={handleChange}
-                />
+              <label key={key} className={form.paymentMethod === key ? "payment-option selected" : "payment-option"}>
+                <input type="radio" name="paymentMethod" value={key} checked={form.paymentMethod === key} onChange={handleChange} />
                 {method.label}
               </label>
             ))}
           </div>
 
-          {/* تفاصيل التحويل - تظهر بس لو الطريقة محتاجة تحويل */}
           {selectedPayment.needsTransfer && (
             <div className="transfer-box">
               <p className="transfer-instruction">
                 حوّل مبلغ <strong>{grandTotal} ج.م</strong> على الرقم ده (من فودافون كاش أو إنستا باي أو أي محفظة إلكترونية):
               </p>
-
               <div className="transfer-number-row">
-                <span className="transfer-number">
-                  {selectedPayment.destinationLabel}: {selectedPayment.destinationValue}
-                </span>
-                <button
-                  type="button"
-                  className="copy-btn"
-                  onClick={() => handleCopyNumber(selectedPayment.destinationValue)}
-                >
+                <span className="transfer-number">{selectedPayment.destinationLabel}: {selectedPayment.destinationValue}</span>
+                <button type="button" className="copy-btn" onClick={() => handleCopyNumber(selectedPayment.destinationValue)}>
                   {copied ? "✅ اتنسخ" : "نسخ"}
                 </button>
               </div>
-
-              <input
-                type="text"
-                name="transactionRef"
-                placeholder="آخر 6 أرقام من عملية التحويل"
-                value={form.transactionRef}
-                onChange={handleChange}
-                maxLength={6}
-                required
-              />
-
-              <p className="screenshot-warning">
-                ⚠️ لازم تبعت <strong>سكرين شوت</strong> إثبات التحويل على الواتساب فور إرسال الطلب، وإلا الطلب مش هيتأكد
-              </p>
+              <input type="text" name="transactionRef" placeholder="آخر 6 أرقام من عملية التحويل" value={form.transactionRef} onChange={handleChange} maxLength={6} required />
+              <p className="screenshot-warning">⚠️ لازم تبعت <strong>سكرين شوت</strong> إثبات التحويل على الواتساب فور إرسال الطلب، وإلا الطلب مش هيتأكد</p>
             </div>
           )}
         </div>
