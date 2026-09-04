@@ -13,7 +13,7 @@ import Delivery from "./pages/Delivery.jsx";
 import CardOrder from "./pages/CardOrder.jsx";
 import Cart from "./pages/Cart.jsx";
 import { CartProvider } from "./context/CartContext.jsx";
-import { AuthProvider } from "../context/AuthContext.jsx";
+import { AuthProvider } from "./context/AuthContext.jsx";
 import ScrollToTop from './pages/ScrollToTop.jsx';
 import './App.css'
 
