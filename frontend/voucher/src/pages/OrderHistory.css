@@ -1,0 +1,49 @@
+.order-history-page {
+  max-width: 480px;
+  margin: 0 auto;
+  padding: 20px 16px 80px;
+}
+
+.order-history-page h2 {
+  text-align: center;
+  margin-bottom: 20px;
+}
+
+.order-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.order-card {
+  background: #fff;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.05);
+}
+
+.order-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+  font-weight: bold;
+}
+
+.order-status {
+  font-size: 13px;
+  color: #555;
+}
+
+.order-card-body {
+  display: flex;
+  justify-content: space-between;
+  color: #666;
+  font-size: 14px;
+}
+
+.order-total {
+  font-weight: bold;
+  color: #222;
+}
