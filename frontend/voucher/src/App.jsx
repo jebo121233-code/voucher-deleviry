@@ -18,6 +18,7 @@ import ScrollToTop from './pages/ScrollToTop.jsx';
 import OrderHistory from "./pages/OrderHistory.jsx";
 import BottomNav from "./pages/BottomNav.jsx";
 import ComingSoon from "./pages/ComingSoon.jsx";
+import ResetPassword from "./pages/ResetPassword.jsx";
 import './App.css'
 
 function App() {
@@ -39,7 +40,8 @@ function App() {
           <Route path='/deals' element={<Deals/>} />
           <Route path='/profile' element={<Profile/>} />
           <Route path='/orders' element={<OrderHistory/>} />
-          <Route path='/vouchers' element={<ComingSoon/>} />      
+          <Route path='/vouchers' element={<ComingSoon/>} /> 
+          <Route path='/reset-password' element={<ResetPassword/>} />
         </Routes>
         <Footer />
         <BottomNav />
