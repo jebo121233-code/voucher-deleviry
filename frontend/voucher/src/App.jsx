@@ -19,6 +19,7 @@ import OrderHistory from "./pages/OrderHistory.jsx";
 import BottomNav from "./pages/BottomNav.jsx";
 import ComingSoon from "./pages/ComingSoon.jsx";
 import ResetPassword from "./pages/ResetPassword.jsx";
+import Admin from "./pages/Admin.jsx";
 import './App.css'
 
 function App() {
@@ -42,6 +43,7 @@ function App() {
           <Route path='/orders' element={<OrderHistory/>} />
           <Route path='/vouchers' element={<ComingSoon/>} /> 
           <Route path='/reset-password' element={<ResetPassword/>} />
+          <Route path='/ve-weza-23jj03only' element={<Admin/>} />
         </Routes>
         <Footer />
         <BottomNav />
