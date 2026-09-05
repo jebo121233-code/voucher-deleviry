@@ -181,6 +181,7 @@ export default function Cart() {
 
     window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(messageParts.join("\n"))}`, "_blank");
 
+    // ---------- 1) الأوردر القديم (زي ما هو، من غير أي تغيير) ----------
     const orderData = {
       first_name: form.name,
       whatsapp: form.whatsapp,
@@ -208,6 +209,35 @@ export default function Cart() {
         body: JSON.stringify(orderData),
         keepalive: true,
       }).catch((err) => console.error("خطأ في الاتصال بالسيرفر:", err));
+    }
+
+    // ---------- 2) 🆕 تسجيل الأوردر في تاب Orders (مربوط بحساب المستخدم) ----------
+    const itemsText = hasDelivery ? deliveryItemsText : cardsText;
+    const storeName = hasDelivery ? cart.restaurant : (cart.cardItems.map((c) => c.store || c.name).join(", "));
+    const storeId = hasDelivery ? (cart.restaurantId || "") : "";
+
+    const newOrderData = {
+      action: "createOrder",
+      customerPhone: user.phone,
+      customerName: form.name,
+      storeId: storeId,
+      storeName: storeName,
+      items: itemsText,
+      total: grandTotal,
+      paymentMethod: paymentMethodText,
+      address: form.address,
+      status: "pending",
+    };
+
+    const orderPayload = new Blob([JSON.stringify(newOrderData)], { type: "text/plain;charset=utf-8" });
+    const orderSent = navigator.sendBeacon(CART_SCRIPT_URL, orderPayload);
+    if (!orderSent) {
+      fetch(CART_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify(newOrderData),
+        keepalive: true,
+      }).catch((err) => console.error("خطأ في تسجيل الأوردر:", err));
     }
 
     const cardTierText = cart.cardItems.map((c) => `${c.name} × ${c.qty}`).join(", ");
