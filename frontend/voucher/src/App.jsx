@@ -16,6 +16,8 @@ import { CartProvider } from "./context/CartContext.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import ScrollToTop from './pages/ScrollToTop.jsx';
 import OrderHistory from "./pages/OrderHistory.jsx";
+import BottomNav from "./pages/BottomNav.jsx";
+import ComingSoon from "./pages/ComingSoon.jsx";
 import './App.css'
 
 function App() {
@@ -37,8 +39,10 @@ function App() {
           <Route path='/deals' element={<Deals/>} />
           <Route path='/profile' element={<Profile/>} />
           <Route path='/orders' element={<OrderHistory/>} />
+          <Route path='/vouchers' element={<ComingSoon/>} />      
         </Routes>
         <Footer />
+        <BottomNav />
       </CartProvider>
     </AuthProvider>
   )
