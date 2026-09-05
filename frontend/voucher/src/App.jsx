@@ -15,6 +15,7 @@ import Cart from "./pages/Cart.jsx";
 import { CartProvider } from "./context/CartContext.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
 import ScrollToTop from './pages/ScrollToTop.jsx';
+import OrderHistory from "./pages/OrderHistory.jsx";
 import './App.css'
 
 function App() {
@@ -35,6 +36,7 @@ function App() {
           <Route path='/login' element={<Login/>} />
           <Route path='/deals' element={<Deals/>} />
           <Route path='/profile' element={<Profile/>} />
+          <Route path='/orders' element={<OrderHistory/>} />
         </Routes>
         <Footer />
       </CartProvider>
