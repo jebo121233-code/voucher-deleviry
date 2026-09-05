@@ -62,15 +62,17 @@ export default function Login() {
 
       {error && <p style={{ color: "red" }}>{error}</p>}
 
-      <div style={{ textAlign: "center", marginTop: "10px" }}>
-  <button
-    type="button"
-    onClick={() => navigate("/reset-password")}
-    style={{ background: "none", border: "none", color: "black", textDecoration: "underline", cursor: "pointer" }}
-  >
-    نسيت الباسورد؟
-  </button>
-</div>
+      {form.password === "" && (
+        <div style={{ textAlign: "center", marginTop: "10px" }}>
+          <button
+            type="button"
+            onClick={() => navigate("/reset-password")}
+            style={{ background: "none", border: "none", color: "black", textDecoration: "underline", cursor: "pointer" }}
+          >
+            نسيت الباسورد؟
+          </button>
+        </div>
+      )}
 
       <div className="signUp">
         <button onClick={() => navigate("/register")}>
