@@ -69,3 +69,20 @@
   display: flex;
   flex-direction: column;
 }
+
+.forgot-password-link {
+  background: none !important;
+  border: none !important;
+  color: #6a5acd !important;
+  text-decoration: underline;
+  font-weight: normal !important;
+  padding: 0 !important;
+  font-size: 14px;
+  cursor: pointer;
+}
+
+.forgot-password-link:hover {
+  transform: none !important;
+  box-shadow: none !important;
+}
+
