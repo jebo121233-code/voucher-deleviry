@@ -16,6 +16,7 @@
   padding: 12px;
   border-radius: 8px;
   border: 1px solid #ccc;
+  color:black;
 }
 
 .admin-login-form button {
@@ -31,6 +32,7 @@
   max-width: 480px;
   margin: 0 auto;
   padding: 20px 16px 80px;
+  color:black;
 }
 
 .admin-tabs {
@@ -46,6 +48,7 @@
   border-radius: 8px;
   background: #eee;
   cursor: pointer;
+  color:black;
 }
 
 .admin-tab.active {
@@ -64,6 +67,7 @@
   border: 1px solid #eee;
   border-radius: 10px;
   padding: 12px 14px;
+  color:black;
 }
 
 .admin-card-header {
@@ -78,7 +82,7 @@
   flex-direction: column;
   gap: 3px;
   font-size: 13px;
-  color: #666;
+  color: black;
   margin-bottom: 8px;
 }
 
@@ -87,4 +91,6 @@
   padding: 8px;
   border-radius: 6px;
   border: 1px solid #ccc;
+  color:black;
+  background:#fff;
 }
