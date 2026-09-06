@@ -22,7 +22,17 @@ export default function Admin() {
   const [tab, setTab] = useState("orders");
   const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
+  const [offers, setOffers] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  const [offerForm, setOfferForm] = useState({
+    title: "",
+    description: "",
+    type: "general",
+    targetPhone: "",
+    expiryDate: "",
+  });
+  const [offerCreating, setOfferCreating] = useState(false);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -81,10 +91,28 @@ export default function Admin() {
     }
   };
 
+  const fetchOffers = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(CART_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "adminGetOffers", password }),
+      });
+      const data = await res.json();
+      if (data.success) setOffers(data.offers);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!authenticated) return;
     if (tab === "orders") fetchOrders();
     if (tab === "users") fetchUsers();
+    if (tab === "offers") fetchOffers();
   }, [authenticated, tab]);
 
   const handleStatusChange = async (rowIndex, newStatus) => {
@@ -97,6 +125,47 @@ export default function Admin() {
       });
     } catch (err) {
       console.error("فشل تحديث الحالة:", err);
+    }
+  };
+
+  const handleOfferFormChange = (e) => {
+    setOfferForm({ ...offerForm, [e.target.name]: e.target.value });
+  };
+
+  const handleCreateOffer = async (e) => {
+    e.preventDefault();
+    setOfferCreating(true);
+    try {
+      const res = await fetch(CART_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "adminCreateOffer", password, ...offerForm }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setOfferForm({ title: "", description: "", type: "general", targetPhone: "", expiryDate: "" });
+        fetchOffers();
+      } else {
+        alert(data.error || "حصل خطأ");
+      }
+    } catch (err) {
+      alert("مشكلة في الاتصال");
+    } finally {
+      setOfferCreating(false);
+    }
+  };
+
+  const handleToggleOffer = async (rowIndex, currentActive) => {
+    const newActive = !(currentActive === true || currentActive === "TRUE");
+    setOffers((prev) => prev.map((o) => (o.rowIndex === rowIndex ? { ...o, active: newActive } : o)));
+    try {
+      await fetch(CART_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "adminToggleOffer", password, rowIndex, active: newActive }),
+      });
+    } catch (err) {
+      console.error("فشل تحديث العرض:", err);
     }
   };
 
@@ -131,6 +200,9 @@ export default function Admin() {
         </button>
         <button className={tab === "users" ? "admin-tab active" : "admin-tab"} onClick={() => setTab("users")}>
           👤 المستخدمين
+        </button>
+        <button className={tab === "offers" ? "admin-tab active" : "admin-tab"} onClick={() => setTab("offers")}>
+          🎟️ العروض
         </button>
       </div>
 
@@ -180,6 +252,82 @@ export default function Admin() {
             </div>
           ))}
         </div>
+      )}
+
+      {tab === "offers" && (
+        <>
+          <form onSubmit={handleCreateOffer} className="admin-offer-form">
+            <h3>➕ إضافة عرض جديد</h3>
+            <input
+              type="text"
+              name="title"
+              placeholder="عنوان العرض"
+              value={offerForm.title}
+              onChange={handleOfferFormChange}
+              required
+            />
+            <textarea
+              name="description"
+              placeholder="وصف قصير للعرض"
+              value={offerForm.description}
+              onChange={handleOfferFormChange}
+              required
+            />
+            <select name="type" value={offerForm.type} onChange={handleOfferFormChange}>
+              <option value="general">عرض عام (لكل الزوار)</option>
+              <option value="personal">عرض شخصي (رقم معين)</option>
+            </select>
+            {offerForm.type === "personal" && (
+              <input
+                type="tel"
+                name="targetPhone"
+                placeholder="رقم الموبايل المستهدف"
+                value={offerForm.targetPhone}
+                onChange={handleOfferFormChange}
+                required
+              />
+            )}
+            <label className="admin-offer-label">تاريخ انتهاء العرض (اختياري)</label>
+            <input
+              type="date"
+              name="expiryDate"
+              value={offerForm.expiryDate}
+              onChange={handleOfferFormChange}
+            />
+            <button type="submit" disabled={offerCreating}>
+              {offerCreating ? "جارٍ الإضافة..." : "إضافة العرض"}
+            </button>
+          </form>
+
+          {!loading && (
+            <div className="admin-list" style={{ marginTop: "20px" }}>
+              {offers.length === 0 && <p style={{ textAlign: "center" }}>مفيش عروض لسه</p>}
+              {offers.map((offer) => {
+                const isActive = offer.active === true || offer.active === "TRUE";
+                return (
+                  <div key={offer.rowIndex} className="admin-card">
+                    <div className="admin-card-header">
+                      <strong>{offer.title}</strong>
+                      <span>{offer.type === "personal" ? "🎁 شخصي" : "🌍 عام"}</span>
+                    </div>
+                    <div className="admin-card-body">
+                      <span>{offer.description}</span>
+                      {offer.targetPhone && <span>الرقم: {offer.targetPhone}</span>}
+                      {offer.expiryDate && <span>ينتهي: {new Date(offer.expiryDate).toLocaleDateString("ar-EG")}</span>}
+                    </div>
+                    <button
+                      className="admin-toggle-btn"
+                      onClick={() => handleToggleOffer(offer.rowIndex, offer.active)}
+                      style={{ background: isActive ? "#4caf50" : "#999" }}
+                    >
+                      {isActive ? "✅ فعال - دوس للإيقاف" : "⏸️ متوقف - دوس للتفعيل"}
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </>
       )}
     </div>
   );
