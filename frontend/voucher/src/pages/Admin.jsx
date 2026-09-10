@@ -30,6 +30,7 @@ export default function Admin() {
     description: "",
     type: "general",
     targetPhone: "",
+    startDate:"",
     expiryDate: "",
   });
   const [offerCreating, setOfferCreating] = useState(false);
@@ -287,13 +288,23 @@ export default function Admin() {
                 required
               />
             )}
-            <label className="admin-offer-label">تاريخ انتهاء العرض (اختياري)</label>
-            <input
-              type="date"
-              name="expiryDate"
-              value={offerForm.expiryDate}
-              onChange={handleOfferFormChange}
-            />
+          <label className="admin-offer-label">تاريخ بداية العرض</label>
+          <input
+           type="date"
+           name="startDate"
+           value={offerForm.startDate}
+           onChange={handleOfferFormChange}
+           required
+           />
+
+         <label className="admin-offer-label">تاريخ انتهاء العرض</label>
+         <input
+          type="date"
+         name="expiryDate"
+         value={offerForm.expiryDate}
+         onChange={handleOfferFormChange}
+         required
+        />
             <button type="submit" disabled={offerCreating}>
               {offerCreating ? "جارٍ الإضافة..." : "إضافة العرض"}
             </button>
@@ -313,6 +324,7 @@ export default function Admin() {
                     <div className="admin-card-body">
                       <span>{offer.description}</span>
                       {offer.targetPhone && <span>الرقم: {offer.targetPhone}</span>}
+                      {offer.startDate && <span>من: {new Date(offer.startDate).toLocaleDateString("ar-EG")}</span>}
                       {offer.expiryDate && <span>ينتهي: {new Date(offer.expiryDate).toLocaleDateString("ar-EG")}</span>}
                     </div>
                     <button
