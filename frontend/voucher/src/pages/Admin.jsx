@@ -30,7 +30,7 @@ export default function Admin() {
     description: "",
     type: "general",
     targetPhone: "",
-    startDate:"",
+    startDate: "",
     expiryDate: "",
   });
   const [offerCreating, setOfferCreating] = useState(false);
@@ -144,7 +144,7 @@ export default function Admin() {
       });
       const data = await res.json();
       if (data.success) {
-        setOfferForm({ title: "", description: "", type: "general", targetPhone: "", expiryDate: "" });
+        setOfferForm({ title: "", description: "", type: "general", targetPhone: "", startDate: "", expiryDate: "" });
         fetchOffers();
       } else {
         alert(data.error || "حصل خطأ");
@@ -288,23 +288,22 @@ export default function Admin() {
                 required
               />
             )}
-          <label className="admin-offer-label">تاريخ بداية العرض</label>
-          <input
-           type="date"
-           name="startDate"
-           value={offerForm.startDate}
-           onChange={handleOfferFormChange}
-           required
-           />
-
-         <label className="admin-offer-label">تاريخ انتهاء العرض</label>
-         <input
-          type="date"
-         name="expiryDate"
-         value={offerForm.expiryDate}
-         onChange={handleOfferFormChange}
-         required
-        />
+            <label className="admin-offer-label">تاريخ بداية العرض</label>
+            <input
+              type="date"
+              name="startDate"
+              value={offerForm.startDate}
+              onChange={handleOfferFormChange}
+              required
+            />
+            <label className="admin-offer-label">تاريخ انتهاء العرض</label>
+            <input
+              type="date"
+              name="expiryDate"
+              value={offerForm.expiryDate}
+              onChange={handleOfferFormChange}
+              required
+            />
             <button type="submit" disabled={offerCreating}>
               {offerCreating ? "جارٍ الإضافة..." : "إضافة العرض"}
             </button>
@@ -325,7 +324,7 @@ export default function Admin() {
                       <span>{offer.description}</span>
                       {offer.targetPhone && <span>الرقم: {offer.targetPhone}</span>}
                       {offer.startDate && <span>من: {new Date(offer.startDate).toLocaleDateString("ar-EG")}</span>}
-                      {offer.expiryDate && <span>ينتهي: {new Date(offer.expiryDate).toLocaleDateString("ar-EG")}</span>}
+                      {offer.expiryDate && <span>لـ: {new Date(offer.expiryDate).toLocaleDateString("ar-EG")}</span>}
                     </div>
                     <button
                       className="admin-toggle-btn"
