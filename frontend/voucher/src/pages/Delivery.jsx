@@ -1,8 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import "./auth.css";
 import "./Delivery.css";
-import { shops as fakeStores, DELIVERY_FEE } from "../data/data.js";
+import { shops as fakeStores, MENU_STORE_KEYS, CART_SCRIPT_URL, DELIVERY_FEE } from "../data/data.js";
 import { useCart } from "../context/CartContext.jsx";
 
 export default function Delivery() {
@@ -12,10 +12,46 @@ export default function Delivery() {
   const storeId = searchParams.get("id") || "";
 
   const store = fakeStores.find((s) => String(s.id) === String(storeId));
-  const hasMenu = store?.menu?.length > 0;
+
+  const [menuItems, setMenuItems] = useState([]);
+  const [menuLoading, setMenuLoading] = useState(true);
+  const hasMenu = menuItems.length > 0;
 
   const { addDeliveryItems } = useCart();
   const [quantities, setQuantities] = useState({});
+
+  useEffect(() => {
+    const menuKey = MENU_STORE_KEYS[storeId];
+    if (!menuKey) {
+      setMenuItems([]);
+      setMenuLoading(false);
+      return;
+    }
+
+    const fetchMenu = async () => {
+      setMenuLoading(true);
+      try {
+        const res = await fetch(CART_SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: "getMenu", storeId: menuKey }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setMenuItems(data.items);
+        } else {
+          setMenuItems([]);
+        }
+      } catch (err) {
+        console.error("فشل تحميل المنيو:", err);
+        setMenuItems([]);
+      } finally {
+        setMenuLoading(false);
+      }
+    };
+
+    fetchMenu();
+  }, [storeId]);
 
   const updateQty = (itemName, delta) => {
     setQuantities((prev) => {
@@ -27,7 +63,7 @@ export default function Delivery() {
   const { orderedItems, subtotalBefore, subtotalAfter } = useMemo(() => {
     if (!hasMenu) return { orderedItems: [], subtotalBefore: 0, subtotalAfter: 0 };
 
-    const items = store.menu
+    const items = menuItems
       .map((item) => ({ ...item, qty: quantities[item.name] || 0 }))
       .filter((item) => item.qty > 0);
 
@@ -35,7 +71,7 @@ export default function Delivery() {
     const after = items.reduce((sum, i) => sum + i.discounted_price * i.qty, 0);
 
     return { orderedItems: items, subtotalBefore: before, subtotalAfter: after };
-  }, [quantities, hasMenu, store]);
+  }, [quantities, hasMenu, menuItems]);
 
   const total = subtotalAfter + DELIVERY_FEE;
 
@@ -45,6 +81,15 @@ export default function Delivery() {
     addDeliveryItems(restaurant, storeId, orderedItems);
     navigate("/cart");
   };
+
+  if (menuLoading) {
+    return (
+      <div className="auth-container delivery-container">
+        <h2>اطلب دليفري</h2>
+        <p style={{ textAlign: "center" }}>جارٍ تحميل المنيو...</p>
+      </div>
+    );
+  }
 
   if (!hasMenu) {
     return (
@@ -66,8 +111,8 @@ export default function Delivery() {
       )}
 
       <div className="delivery-menu">
-        {store.menu.map((item, index) => (
-          <div className="delivery-menu-item" key={index}>
+        {menuItems.map((item, index) => (
+          <div className="delivery-menu-item" key={item.itemId || index}>
             <div className="delivery-menu-item-info">
               <span className="menu-item-name">{item.name}</span>
               <span className="menu-item-prices">
