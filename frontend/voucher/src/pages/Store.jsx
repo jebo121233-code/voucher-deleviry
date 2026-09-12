@@ -262,13 +262,13 @@ export default function Store() {
                 return (
                   <div className="menu-item" key={item.itemId || index}>
                     <div className="menu-item-info">
-                      {item.image && (
-                        <img
-                          src={item.image}
-                          alt={item.name}
-                          className="menu-item-thumb"
-                        />
-                      )}
+                     {item.images?.[0] && (
+                      <img
+                       src={item.images[0]}
+                       alt={item.name}
+                       className="menu-item-thumb"
+                     />
+                    )}
                       <span className="menu-item-name">{item.name}</span>
                     </div>
 
