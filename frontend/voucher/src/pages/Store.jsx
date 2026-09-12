@@ -1,8 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
-import axios from "axios";
 import "./Store.css";
-import { shops as fakeStores } from "../data/data.js";
+import { shops as fakeStores, MENU_STORE_KEYS, CART_SCRIPT_URL } from "../data/data.js";
 import { useCart } from "../context/CartContext.jsx";
 
 export default function Store() {
@@ -12,6 +11,8 @@ export default function Store() {
 
   const [store, setStore] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [menuItems, setMenuItems] = useState([]);
+  const [menuLoading, setMenuLoading] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(null);
   const [quantities, setQuantities] = useState({});
 
@@ -37,7 +38,7 @@ export default function Store() {
   );
 
   const handleAddToCart = () => {
-    const selectedItems = store.menu
+    const selectedItems = menuItems
       .map((item, index) => ({ ...item, qty: getQuantity(index) }))
       .filter((item) => item.qty > 0);
 
@@ -47,22 +48,44 @@ export default function Store() {
     navigate("/cart");
   };
 
-  const fetchStore = async () => {
-    try {
-      const res = await axios.get(`http://localhost:5000/api/store/${id}`);
-      setStore(res.data.store);
-    } catch (err) {
-      const fake =
-        fakeStores.find((s) => String(s.id) === String(id)) || fakeStores[0];
-      setStore(fake);
-    } finally {
-      setLoading(false);
-    }
-  };
+  useEffect(() => {
+    const found = fakeStores.find((s) => String(s.id) === String(id)) || fakeStores[0];
+    setStore(found);
+    setLoading(false);
+  }, [id]);
 
   useEffect(() => {
-    fetchStore();
-  }, [id]);
+    if (!store) return;
+    const menuKey = MENU_STORE_KEYS[store.id];
+    if (!menuKey) {
+      setMenuItems([]);
+      return;
+    }
+
+    const fetchMenu = async () => {
+      setMenuLoading(true);
+      try {
+        const res = await fetch(CART_SCRIPT_URL, {
+          method: "POST",
+          headers: { "Content-Type": "text/plain;charset=utf-8" },
+          body: JSON.stringify({ action: "getMenu", storeId: menuKey }),
+        });
+        const data = await res.json();
+        if (data.success) {
+          setMenuItems(data.items);
+        } else {
+          setMenuItems([]);
+        }
+      } catch (err) {
+        console.error("فشل تحميل المنيو:", err);
+        setMenuItems([]);
+      } finally {
+        setMenuLoading(false);
+      }
+    };
+
+    fetchMenu();
+  }, [store]);
 
   useEffect(() => {
     if (selectedImageIndex === null || !store?.images?.length) return;
@@ -225,21 +248,23 @@ export default function Store() {
         )}
 
         {/* MENU (restaurants only) */}
-        {store.menu?.length > 0 && (
+        {menuLoading && <p style={{ textAlign: "center" }}>جارٍ تحميل المنيو...</p>}
+
+        {!menuLoading && menuItems.length > 0 && (
           <div className="store-menu">
             <h3>المنيو</h3>
             <div className="menu-list">
-              {store.menu.map((item, index) => {
+              {menuItems.map((item, index) => {
                 const qty = getQuantity(index);
                 const unitPrice = item.discounted_price ?? item.price;
                 const totalPrice = (unitPrice * qty).toFixed(2);
 
                 return (
-                  <div className="menu-item" key={index}>
+                  <div className="menu-item" key={item.itemId || index}>
                     <div className="menu-item-info">
                       {item.image && (
                         <img
-                          src={`/${item.image}`}
+                          src={item.image}
                           alt={item.name}
                           className="menu-item-thumb"
                         />
