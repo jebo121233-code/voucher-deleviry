@@ -4,6 +4,35 @@ export const CARD_SHIPPING_FEE = 10; // رسوم شحن كارت الخصم
 export const CART_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz4iYTup23ZNxkm-yzfbKQF35LDG2_RwdDOv_SCGbYG6sTH-bkdXFXVf4bChyV4iDUF/exec";
 export const WHATSAPP_NUMBER = "201025311724";
 
+// ربط ID المتجر في الموقع باسم تاب المنيو في الشيت (Menu_<key>)
+// ملحوظة: مش لازم تعمل كل التابات دلوقتي - بس افتح تاب لأي مطعم لما تكون جاهز تشغله فعلياً
+export const MENU_STORE_KEYS = {
+  "11": "Rolz",              // Rolz ✅ (شغال بالفعل)
+  "19": "Milky",             // Milky
+  "20": "Barquqa",           // برقوقة
+  "21": "Saxs",              // Sax's
+  "22": "Bellissimo",        // Bellissimo
+  "23": "WLounge",           // W Lounge
+  "24": "TeaTalk",           // Tea Talk
+  "25": "Oak",               // Oak
+  "26": "ShawermaCity",      // shawerma city شاورما سيتي
+  "30": "Ice911",            // 911 Ice Cream & Desserts
+  "33": "WahedBurger",       // واحد برجر
+  "34": "Casanova",          // casanova coffe
+  "35": "ShrimpPirates",     // shrimp pirates
+  "36": "WahedMetabaq",      // واحد مطبق
+  "38": "BeitFilastini",     // البيت الفلسطيني
+  "39": "SevenCafe",         // seven cafe
+  "40": "Frisky",            // Frisky
+  "41": "Menem",             // منعم menem
+  "42": "ShawarmaSyria",     // shawarma syria شاورما سوريا
+  "43": "Kukluck",           // kukluck
+  "46": "Hanover",           // HANOVER
+  "47": "Meshaltet",         // مشلتت
+  "48": "Noga",              // نوجا
+  "49": "Twevel",            // Twevel
+};
+
 // كروت الخصم اللي العميل يقدر يطلبها من الهوم مباشرة
 // عشان تضيف كارت جديد: زود عنصر هنا بنفس الشكل، وحط صور الكارت في مجلد public
 // ⚠️ عدّل price بالسعر الحقيقي بتاع الكارت
@@ -183,14 +212,7 @@ export const shops = [
         addresses: ["تقاطع حسان بن ثابت مع المتوكل", "الإستاد أمام شارع 306", "داخل نادي طنطا"],
         logos: ["rolz.jpeg"],
         images: ["rolz_menu1.jpeg", "rolz_menu2.jpeg", "rolz_menu3.jpeg"],
-        menu: [
-  { name: "هيكري برجر", price: 97, discounted_price: 82.45, image: "images/rolz/hickory-burger.jpg" },
-  { name: "ديل تشيز برجر", price: 134, discounted_price: 113.90, image: "images/rolz/double-cheese-burger.jpg" },
-  { name: "سينجل تشيز برجر", price: 85, discounted_price: 72.25, image: "images/rolz/cheese-burger.jpg" },
-  { name: "هامر برجر", price: 106, discounted_price: 90.10, image: "images/rolz/hammer-burger.jpg" },
-  { name: "فولكانو برجر", price: 106, discounted_price: 90.10, image: "images/rolz/volcano-burger.jpg" },
-  { name: "تشيز بيف رول", price: 106, discounted_price: 90.10, image: "images/rolz/cheese-beef-roll.jpg" },
-],
+ 
     },
     {
         id: "12",
