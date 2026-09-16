@@ -23,7 +23,10 @@ export default function Admin() {
   const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
   const [offers, setOffers] = useState([]);
+  const [partnerRequests, setPartnerRequests] = useState([]);
+  const [restaurantAccounts, setRestaurantAccounts] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [approvedInfo, setApprovedInfo] = useState(null);
 
   const [offerForm, setOfferForm] = useState({
     title: "",
@@ -109,11 +112,49 @@ export default function Admin() {
     }
   };
 
+  const fetchPartnerRequests = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(CART_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "adminGetPartnerRequests", password }),
+      });
+      const data = await res.json();
+      if (data.success) setPartnerRequests(data.requests);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchRestaurantAccounts = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(CART_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "adminGetRestaurantAccounts", password }),
+      });
+      const data = await res.json();
+      if (data.success) setRestaurantAccounts(data.accounts);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!authenticated) return;
     if (tab === "orders") fetchOrders();
     if (tab === "users") fetchUsers();
     if (tab === "offers") fetchOffers();
+    if (tab === "partners") {
+      fetchPartnerRequests();
+      fetchRestaurantAccounts();
+    }
   }, [authenticated, tab]);
 
   const handleStatusChange = async (rowIndex, newStatus) => {
@@ -170,6 +211,39 @@ export default function Admin() {
     }
   };
 
+  const handleApprovePartner = async (rowIndex) => {
+    try {
+      const res = await fetch(CART_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "adminApprovePartner", password, rowIndex }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setApprovedInfo(data);
+        fetchPartnerRequests();
+        fetchRestaurantAccounts();
+      } else {
+        alert(data.error || "حصل خطأ");
+      }
+    } catch (err) {
+      alert("مشكلة في الاتصال");
+    }
+  };
+
+  const handleRejectPartner = async (rowIndex) => {
+    setPartnerRequests((prev) => prev.map((r) => (r.rowIndex === rowIndex ? { ...r, status: "rejected" } : r)));
+    try {
+      await fetch(CART_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "adminRejectPartner", password, rowIndex }),
+      });
+    } catch (err) {
+      console.error("فشل الرفض:", err);
+    }
+  };
+
   if (!authenticated) {
     return (
       <div className="admin-login-container">
@@ -204,6 +278,9 @@ export default function Admin() {
         </button>
         <button className={tab === "offers" ? "admin-tab active" : "admin-tab"} onClick={() => setTab("offers")}>
           🎟️ العروض
+        </button>
+        <button className={tab === "partners" ? "admin-tab active" : "admin-tab"} onClick={() => setTab("partners")}>
+          🤝 المطاعم
         </button>
       </div>
 
@@ -338,6 +415,75 @@ export default function Admin() {
               })}
             </div>
           )}
+        </>
+      )}
+
+      {tab === "partners" && !loading && (
+        <>
+          {approvedInfo && (
+            <div className="admin-approved-box">
+              <p>✅ تم إنشاء حساب مطعم "{approvedInfo.restaurantName}" بنجاح!</p>
+              <p><strong>الرقم:</strong> {approvedInfo.phone}</p>
+              <p><strong>الباسورد:</strong> {approvedInfo.generatedPassword}</p>
+              <p style={{ fontSize: "13px", color: "#666" }}>ابعت البيانات دي للمطعم على واتساب دلوقتي</p>
+              <button onClick={() => setApprovedInfo(null)}>إغلاق</button>
+            </div>
+          )}
+
+          <h3 style={{ margin: "10px 0" }}>📋 طلبات الشراكة</h3>
+          <div className="admin-list">
+            {partnerRequests.length === 0 && <p style={{ textAlign: "center" }}>مفيش طلبات</p>}
+            {partnerRequests.map((req) => (
+              <div key={req.rowIndex} className="admin-card">
+                <div className="admin-card-header">
+                  <strong>{req.restaurantName}</strong>
+                  <span>{req.status === "pending" ? "⏳ قيد المراجعة" : req.status === "approved" ? "✅ مقبول" : "❌ مرفوض"}</span>
+                </div>
+                <div className="admin-card-body">
+                  <span>صاحب المطعم: {req.ownerName}</span>
+                  <span>الرقم: {req.phone}</span>
+                  <span>{new Date(req.timestamp).toLocaleString("ar-EG")}</span>
+                </div>
+                {req.status === "pending" && (
+                  <div style={{ display: "flex", gap: "8px" }}>
+                    <button
+                      className="admin-toggle-btn"
+                      style={{ background: "#4caf50" }}
+                      onClick={() => handleApprovePartner(req.rowIndex)}
+                    >
+                      ✅ موافقة
+                    </button>
+                    <button
+                      className="admin-toggle-btn"
+                      style={{ background: "#c62828" }}
+                      onClick={() => handleRejectPartner(req.rowIndex)}
+                    >
+                      ❌ رفض
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <h3 style={{ margin: "20px 0 10px" }}>🍽️ حسابات المطاعم النشطة</h3>
+          <div className="admin-list">
+            {restaurantAccounts.length === 0 && <p style={{ textAlign: "center" }}>مفيش حسابات لسه</p>}
+            {restaurantAccounts.map((acc) => (
+              <div key={acc.rowIndex} className="admin-card">
+                <div className="admin-card-header">
+                  <strong>{acc.restaurantName}</strong>
+                  <span>{acc.status === "active" ? "🟢 نشط" : "🔴 موقوف"}</span>
+                </div>
+                <div className="admin-card-body">
+                  <span>صاحب المطعم: {acc.ownerName}</span>
+                  <span>الرقم: {acc.phone}</span>
+                  <span>الباسورد: {acc.password}</span>
+                  <span>تاريخ الإنشاء: {new Date(acc.createdAt).toLocaleDateString("ar-EG")}</span>
+                </div>
+              </div>
+            ))}
+          </div>
         </>
       )}
     </div>
