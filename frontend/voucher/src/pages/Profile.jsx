@@ -46,6 +46,9 @@ export default function Profile() {
         <button className="profile-action-btn" onClick={() => navigate("/orders")}>
           📦 طلباتي
         </button>
+        <button className="profile-action-btn" onClick={() => navigate("/partner-register")}>
+          🤝 سجل كمطعم شريك
+        </button>
         <button className="profile-action-btn logout-btn" onClick={handleLogout}>
           🚪 تسجيل الخروج
         </button>
