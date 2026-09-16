@@ -136,12 +136,21 @@ export default function Profile() {
           <span className="menu-label">طلباتي</span>
         </div>
 
-        <div className="profile-menu-item" onClick={() => navigate("/vouchers")}>
-          <span className="menu-icon">🎫</span>
-          <span className="menu-label">Vouchers</span>
-        </div>
-      </div>
+<div className="profile-menu-item" onClick={() => navigate("/vouchers")}>
+  <span className="menu-icon">🎫</span>
+  <span className="menu-label">Vouchers</span>
+</div>
 
+<div className="profile-menu-item" onClick={() => window.open(`https://wa.me/201025311724`, "_blank")}>
+  <span className="menu-icon">❓</span>
+  <span className="menu-label">مساعدة</span>
+</div>
+
+<div className="profile-menu-item" onClick={() => navigate("/about")}>
+  <span className="menu-icon">ℹ️</span>
+  <span className="menu-label">عن التطبيق</span>
+</div>
+</div>
       <div className="profile-actions">
         <button className="profile-action-btn" onClick={() => navigate("/partner-register")}>
           🤝 سجل كمطعم شريك
