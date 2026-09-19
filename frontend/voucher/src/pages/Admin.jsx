@@ -13,6 +13,19 @@ const STATUS_LABELS = {
   cancelled: "❌ ملغي",
 };
 
+// يحول رقم مصري لصيغة دولية عشان رابط واتساب يشتغل صح
+function toWhatsAppNumber(phone) {
+  let digits = String(phone || "").replace(/\D/g, "");
+  if (digits.startsWith("20")) return digits;
+  if (digits.startsWith("0")) return "20" + digits.slice(1);
+  return "20" + digits;
+}
+
+function buildWhatsAppLink(phone, message) {
+  const number = toWhatsAppNumber(phone);
+  return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
+}
+
 export default function Admin() {
   const [password, setPassword] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
@@ -27,6 +40,10 @@ export default function Admin() {
   const [restaurantAccounts, setRestaurantAccounts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [approvedInfo, setApprovedInfo] = useState(null);
+
+  // بيانات اليوزر/الباسورد اللي بيكتبها الأدمن لكل طلب (keyed بـ rowIndex)
+  const [approveForms, setApproveForms] = useState({});
+  const [approvingRow, setApprovingRow] = useState(null);
 
   const [offerForm, setOfferForm] = useState({
     title: "",
@@ -211,16 +228,44 @@ export default function Admin() {
     }
   };
 
+  const handleApproveFormChange = (rowIndex, field, value) => {
+    setApproveForms((prev) => ({
+      ...prev,
+      [rowIndex]: { ...prev[rowIndex], [field]: value },
+    }));
+  };
+
   const handleApprovePartner = async (rowIndex) => {
+    const form = approveForms[rowIndex] || {};
+    const username = (form.username || "").trim();
+    const restaurantPassword = (form.password || "").trim();
+
+    if (!username || !restaurantPassword) {
+      alert("من فضلك اكتب اليوزر نيم والباسورد الأول");
+      return;
+    }
+
+    setApprovingRow(rowIndex);
     try {
       const res = await fetch(CART_SCRIPT_URL, {
         method: "POST",
         headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify({ action: "adminApprovePartner", password, rowIndex }),
+        body: JSON.stringify({
+          action: "adminApprovePartner",
+          password,
+          rowIndex,
+          username,
+          restaurantPassword,
+        }),
       });
       const data = await res.json();
       if (data.success) {
         setApprovedInfo(data);
+        setApproveForms((prev) => {
+          const next = { ...prev };
+          delete next[rowIndex];
+          return next;
+        });
         fetchPartnerRequests();
         fetchRestaurantAccounts();
       } else {
@@ -228,6 +273,8 @@ export default function Admin() {
       }
     } catch (err) {
       alert("مشكلة في الاتصال");
+    } finally {
+      setApprovingRow(null);
     }
   };
 
@@ -423,10 +470,23 @@ export default function Admin() {
           {approvedInfo && (
             <div className="admin-approved-box">
               <p>✅ تم إنشاء حساب مطعم "{approvedInfo.restaurantName}" بنجاح!</p>
-              <p><strong>الرقم:</strong> {approvedInfo.phone}</p>
-              <p><strong>الباسورد:</strong> {approvedInfo.generatedPassword}</p>
-              <p style={{ fontSize: "13px", color: "#666" }}>ابعت البيانات دي للمطعم على واتساب دلوقتي</p>
-              <button onClick={() => setApprovedInfo(null)}>إغلاق</button>
+              <p><strong>اليوزر نيم:</strong> {approvedInfo.username}</p>
+              <p><strong>الباسورد:</strong> {approvedInfo.restaurantPassword}</p>
+              <div style={{ display: "flex", gap: "8px", marginTop: "10px", flexWrap: "wrap" }}>
+                <a
+                  href={buildWhatsAppLink(
+                    approvedInfo.phone,
+                    `مرحباً ${approvedInfo.ownerName} 👋\n\nتم تفعيل حساب مطعم "${approvedInfo.restaurantName}" على VE Voucher ✅\n\nبيانات الدخول:\nاليوزر نيم: ${approvedInfo.username}\nالباسورد: ${approvedInfo.restaurantPassword}\n\nمبروك الانضمام لينا 🎉`
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="admin-toggle-btn"
+                  style={{ background: "#25D366", textDecoration: "none", textAlign: "center" }}
+                >
+                  📱 إرسال بيانات الدخول على واتساب
+                </a>
+                <button onClick={() => setApprovedInfo(null)}>إغلاق</button>
+              </div>
             </div>
           )}
 
@@ -445,21 +505,36 @@ export default function Admin() {
                   <span>{new Date(req.timestamp).toLocaleString("ar-EG")}</span>
                 </div>
                 {req.status === "pending" && (
-                  <div style={{ display: "flex", gap: "8px" }}>
-                    <button
-                      className="admin-toggle-btn"
-                      style={{ background: "#4caf50" }}
-                      onClick={() => handleApprovePartner(req.rowIndex)}
-                    >
-                      ✅ موافقة
-                    </button>
-                    <button
-                      className="admin-toggle-btn"
-                      style={{ background: "#c62828" }}
-                      onClick={() => handleRejectPartner(req.rowIndex)}
-                    >
-                      ❌ رفض
-                    </button>
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "8px" }}>
+                    <input
+                      type="text"
+                      placeholder="اليوزر نيم"
+                      value={approveForms[req.rowIndex]?.username || ""}
+                      onChange={(e) => handleApproveFormChange(req.rowIndex, "username", e.target.value)}
+                    />
+                    <input
+                      type="text"
+                      placeholder="الباسورد"
+                      value={approveForms[req.rowIndex]?.password || ""}
+                      onChange={(e) => handleApproveFormChange(req.rowIndex, "password", e.target.value)}
+                    />
+                    <div style={{ display: "flex", gap: "8px" }}>
+                      <button
+                        className="admin-toggle-btn"
+                        style={{ background: "#4caf50" }}
+                        onClick={() => handleApprovePartner(req.rowIndex)}
+                        disabled={approvingRow === req.rowIndex}
+                      >
+                        {approvingRow === req.rowIndex ? "جارٍ الموافقة..." : "✅ موافقة"}
+                      </button>
+                      <button
+                        className="admin-toggle-btn"
+                        style={{ background: "#c62828" }}
+                        onClick={() => handleRejectPartner(req.rowIndex)}
+                      >
+                        ❌ رفض
+                      </button>
+                    </div>
                   </div>
                 )}
               </div>
@@ -478,6 +553,7 @@ export default function Admin() {
                 <div className="admin-card-body">
                   <span>صاحب المطعم: {acc.ownerName}</span>
                   <span>الرقم: {acc.phone}</span>
+                  <span>اليوزر نيم: {acc.username}</span>
                   <span>الباسورد: {acc.password}</span>
                   <span>تاريخ الإنشاء: {new Date(acc.createdAt).toLocaleDateString("ar-EG")}</span>
                 </div>
