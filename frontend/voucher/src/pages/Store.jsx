@@ -4,6 +4,56 @@ import "./Store.css";
 import { shops as fakeStores, MENU_STORE_KEYS, CART_SCRIPT_URL } from "../data/data.js";
 import { useCart } from "../context/CartContext.jsx";
 
+// يحسب ملخص الاختيارات، ويفصل السعر الإضافي لجزء بيتخصم عليه (زي الحجم) وجزء مش بيتخصم عليه (زي الصوصات)
+function getConfigSummaryAndPrice(item, choicesMap) {
+  let summaryParts = [];
+  let discountablePriceAdd = 0;
+  let nonDiscountablePriceAdd = 0;
+
+  (item.options || []).forEach((group, gIndex) => {
+    // discountable = true افتراضيًا لو مكتوبش صراحةً false
+    const isDiscountable = group.discountable !== false;
+    const sel = choicesMap[gIndex];
+
+    const applyChoice = (choice) => {
+      summaryParts.push(choice.label);
+      const add = Number(choice.priceAdd) || 0;
+      if (isDiscountable) discountablePriceAdd += add;
+      else nonDiscountablePriceAdd += add;
+    };
+
+    if (group.required) {
+      if (sel !== undefined && group.choices[sel]) applyChoice(group.choices[sel]);
+    } else {
+      const arr = sel || [];
+      arr.forEach((ci) => {
+        if (group.choices[ci]) applyChoice(group.choices[ci]);
+      });
+    }
+  });
+
+  return { summary: summaryParts.join("، "), discountablePriceAdd, nonDiscountablePriceAdd };
+}
+
+// بيتأكد إن كل الأوبشنز الإجبارية (زي الحجم) اتحددت
+function allRequiredSelected(item, choicesMap) {
+  return (item.options || []).every(
+    (group, gIndex) => !group.required || choicesMap[gIndex] !== undefined
+  );
+}
+
+// بيحسب السعر قبل وبعد الخصم: الخصم بيتطبق على (السعر الأساسي + الإضافات القابلة للخصم) بس
+// والإضافات الغير قابلة للخصم (زي الصوص) بتتضاف بسعرها الكامل بعد الخصم
+function computeConfiguredPrices(item, discountablePriceAdd, nonDiscountablePriceAdd) {
+  const discountableBase = (item.price || 0) + discountablePriceAdd;
+  const discountPercent = item.discount_percent || 0;
+  const discountedBase = Math.round(discountableBase - (discountableBase * discountPercent) / 100);
+
+  const before = discountableBase + nonDiscountablePriceAdd;
+  const after = discountedBase + nonDiscountablePriceAdd;
+  return { before, after };
+}
+
 export default function Store() {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -15,6 +65,12 @@ export default function Store() {
   const [menuLoading, setMenuLoading] = useState(false);
   const [selectedImageIndex, setSelectedImageIndex] = useState(null);
   const [quantities, setQuantities] = useState({});
+
+  // selections[itemIndex] = [{ key, choicesMap, summary, priceAdd, qty }]
+  const [selections, setSelections] = useState({});
+  const [optionModal, setOptionModal] = useState(null); // { item, index }
+  const [modalChoices, setModalChoices] = useState({});
+  const [modalQty, setModalQty] = useState(1);
 
   const getQuantity = (index) => quantities[index] || 0;
 
@@ -32,15 +88,112 @@ export default function Store() {
     }));
   };
 
-  const selectedItemsCount = Object.values(quantities).reduce(
-    (sum, q) => sum + (q || 0),
+  const openOptionModal = (item, index) => {
+    setOptionModal({ item, index });
+    setModalChoices({});
+    setModalQty(1);
+  };
+
+  const closeOptionModal = () => {
+    setOptionModal(null);
+    setModalChoices({});
+    setModalQty(1);
+  };
+
+  const selectRequiredChoice = (gIndex, cIndex) => {
+    setModalChoices((prev) => ({ ...prev, [gIndex]: cIndex }));
+  };
+
+  const toggleOptionalChoice = (gIndex, cIndex) => {
+    setModalChoices((prev) => {
+      const arr = prev[gIndex] ? [...prev[gIndex]] : [];
+      const pos = arr.indexOf(cIndex);
+      if (pos >= 0) arr.splice(pos, 1);
+      else arr.push(cIndex);
+      return { ...prev, [gIndex]: arr };
+    });
+  };
+
+  const confirmAddConfiguredItem = () => {
+    if (!optionModal) return;
+    const { item, index } = optionModal;
+
+    if (!allRequiredSelected(item, modalChoices)) {
+      alert("من فضلك اختار كل الأوبشنز المطلوبة");
+      return;
+    }
+
+    const { summary, discountablePriceAdd, nonDiscountablePriceAdd } = getConfigSummaryAndPrice(item, modalChoices);
+    const key = JSON.stringify(modalChoices);
+
+    setSelections((prev) => {
+      const existing = prev[index] || [];
+      const foundIdx = existing.findIndex((c) => c.key === key);
+      let updated;
+      if (foundIdx >= 0) {
+        updated = existing.map((c, i) =>
+          i === foundIdx ? { ...c, qty: c.qty + modalQty } : c
+        );
+      } else {
+        updated = [
+          ...existing,
+          { key, choicesMap: modalChoices, summary, discountablePriceAdd, nonDiscountablePriceAdd, qty: modalQty },
+        ];
+      }
+      return { ...prev, [index]: updated };
+    });
+
+    closeOptionModal();
+  };
+
+  const updateConfigQty = (index, key, delta) => {
+    setSelections((prev) => {
+      const existing = prev[index] || [];
+      const updated = existing
+        .map((c) => (c.key === key ? { ...c, qty: Math.max(0, c.qty + delta) } : c))
+        .filter((c) => c.qty > 0);
+      return { ...prev, [index]: updated };
+    });
+  };
+
+  const configuredItemsCount = Object.values(selections).reduce(
+    (sum, configs) => sum + configs.reduce((s, c) => s + (c.qty || 0), 0),
     0
   );
 
+  const selectedItemsCount =
+    Object.values(quantities).reduce((sum, q) => sum + (q || 0), 0) + configuredItemsCount;
+
   const handleAddToCart = () => {
-    const selectedItems = menuItems
-      .map((item, index) => ({ ...item, qty: getQuantity(index) }))
+    const simpleItems = menuItems
+      .map((item, index) => ({ item, index }))
+      .filter(({ item }) => !(item.options && item.options.length > 0))
+      .map(({ item, index }) => ({ ...item, qty: getQuantity(index) }))
       .filter((item) => item.qty > 0);
+
+    const configuredItems = [];
+    Object.entries(selections).forEach(([indexStr, configs]) => {
+      const item = menuItems[Number(indexStr)];
+      if (!item) return;
+      configs.forEach((cfg) => {
+        if (cfg.qty <= 0) return;
+        const { before, after } = computeConfiguredPrices(
+          item,
+          cfg.discountablePriceAdd,
+          cfg.nonDiscountablePriceAdd
+        );
+        configuredItems.push({
+          itemId: `${item.itemId}-${cfg.key}`,
+          name: cfg.summary ? `${item.name} (${cfg.summary})` : item.name,
+          price: before,
+          discounted_price: after,
+          images: item.images,
+          qty: cfg.qty,
+        });
+      });
+    });
+
+    const selectedItems = [...simpleItems, ...configuredItems];
 
     if (selectedItems.length === 0) return;
 
@@ -255,6 +408,7 @@ export default function Store() {
             <h3>المنيو</h3>
             <div className="menu-list">
               {menuItems.map((item, index) => {
+                const hasOptions = item.options && item.options.length > 0;
                 const qty = getQuantity(index);
                 const unitPrice = item.discounted_price ?? item.price;
                 const totalPrice = (unitPrice * qty).toFixed(2);
@@ -277,32 +431,240 @@ export default function Store() {
                       <span className="price-after">{item.discounted_price} ج.م</span>
                     </span>
 
-                    <div className="quantity-control">
-                      <button
-                        type="button"
-                        className="qty-btn"
-                        onClick={() => decreaseQty(index)}
-                      >
-                        −
-                      </button>
-                      <span className="qty-value">{qty}</span>
-                      <button
-                        type="button"
-                        className="qty-btn"
-                        onClick={() => increaseQty(index)}
-                      >
-                        +
-                      </button>
-                    </div>
+                    {!hasOptions && (
+                      <>
+                        <div className="quantity-control">
+                          <button
+                            type="button"
+                            className="qty-btn"
+                            onClick={() => decreaseQty(index)}
+                          >
+                            −
+                          </button>
+                          <span className="qty-value">{qty}</span>
+                          <button
+                            type="button"
+                            className="qty-btn"
+                            onClick={() => increaseQty(index)}
+                          >
+                            +
+                          </button>
+                        </div>
 
-                    {qty > 0 && (
-                      <div className="item-total-price">
-                        الإجمالي: {totalPrice} ج.م
-                      </div>
+                        {qty > 0 && (
+                          <div className="item-total-price">
+                            الإجمالي: {totalPrice} ج.م
+                          </div>
+                        )}
+                      </>
+                    )}
+
+                    {hasOptions && (
+                      <>
+                        <button
+                          type="button"
+                          className="qty-btn"
+                          style={{ width: "auto", padding: "0 12px" }}
+                          onClick={() => openOptionModal(item, index)}
+                        >
+                          🎛️ اختار وأضف
+                        </button>
+
+                        {(selections[index] || []).map((cfg) => {
+                          const cfgUnitPrice = computeConfiguredPrices(
+                            item,
+                            cfg.discountablePriceAdd,
+                            cfg.nonDiscountablePriceAdd
+                          ).after;
+                          return (
+                            <div
+                              key={cfg.key}
+                              style={{
+                                display: "flex",
+                                justifyContent: "space-between",
+                                alignItems: "center",
+                                width: "100%",
+                                marginTop: "6px",
+                                padding: "6px 0",
+                                borderTop: "1px dashed #ccc",
+                                gap: "8px",
+                                flexWrap: "wrap",
+                              }}
+                            >
+                              <span style={{ fontSize: "13px", color: "#555" }}>
+                                {cfg.summary || "بدون إضافات"}
+                              </span>
+                              <div className="quantity-control">
+                                <button
+                                  type="button"
+                                  className="qty-btn"
+                                  onClick={() => updateConfigQty(index, cfg.key, -1)}
+                                >
+                                  −
+                                </button>
+                                <span className="qty-value">{cfg.qty}</span>
+                                <button
+                                  type="button"
+                                  className="qty-btn"
+                                  onClick={() => updateConfigQty(index, cfg.key, 1)}
+                                >
+                                  +
+                                </button>
+                              </div>
+                              <span className="item-total-price">
+                                {(cfgUnitPrice * cfg.qty).toFixed(2)} ج.م
+                              </span>
+                            </div>
+                          );
+                        })}
+                      </>
                     )}
                   </div>
                 );
               })}
+            </div>
+          </div>
+        )}
+
+        {/* OPTIONS MODAL */}
+        {optionModal && (
+          <div
+            onClick={closeOptionModal}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.5)",
+              display: "flex",
+              alignItems: "flex-end",
+              justifyContent: "center",
+              zIndex: 1000,
+            }}
+          >
+            <div
+              onClick={(e) => e.stopPropagation()}
+              style={{
+                background: "#fff",
+                width: "100%",
+                maxWidth: "480px",
+                borderRadius: "16px 16px 0 0",
+                padding: "20px",
+                maxHeight: "80vh",
+                overflowY: "auto",
+              }}
+            >
+              <h4 style={{ marginBottom: "12px" }}>{optionModal.item.name}</h4>
+
+              {optionModal.item.options.map((group, gIndex) => (
+                <div key={gIndex} style={{ marginBottom: "16px" }}>
+                  <p style={{ fontWeight: "bold", marginBottom: "6px" }}>
+                    {group.name} {group.required && <span style={{ color: "red" }}>*</span>}
+                  </p>
+                  {group.choices.map((choice, cIndex) => {
+                    const isChecked = group.required
+                      ? modalChoices[gIndex] === cIndex
+                      : (modalChoices[gIndex] || []).includes(cIndex);
+                    return (
+                      <label
+                        key={cIndex}
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                          padding: "8px 4px",
+                          borderBottom: "1px solid #eee",
+                          cursor: "pointer",
+                        }}
+                      >
+                        <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                          <input
+                            type={group.required ? "radio" : "checkbox"}
+                            name={`group-${gIndex}`}
+                            checked={isChecked}
+                            onChange={() =>
+                              group.required
+                                ? selectRequiredChoice(gIndex, cIndex)
+                                : toggleOptionalChoice(gIndex, cIndex)
+                            }
+                          />
+                          {choice.label}
+                        </span>
+                        {Number(choice.priceAdd) > 0 && (
+                          <span style={{ color: "#888", fontSize: "13px" }}>
+                            +{choice.priceAdd} ج.م
+                          </span>
+                        )}
+                      </label>
+                    );
+                  })}
+                </div>
+              ))}
+
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  margin: "16px 0",
+                }}
+              >
+                <span>الكمية</span>
+                <div className="quantity-control">
+                  <button
+                    type="button"
+                    className="qty-btn"
+                    onClick={() => setModalQty((q) => Math.max(1, q - 1))}
+                  >
+                    −
+                  </button>
+                  <span className="qty-value">{modalQty}</span>
+                  <button
+                    type="button"
+                    className="qty-btn"
+                    onClick={() => setModalQty((q) => q + 1)}
+                  >
+                    +
+                  </button>
+                </div>
+              </div>
+
+              <p style={{ fontWeight: "bold", marginBottom: "12px" }}>
+                الإجمالي:{" "}
+                {(() => {
+                  const { discountablePriceAdd, nonDiscountablePriceAdd } = getConfigSummaryAndPrice(
+                    optionModal.item,
+                    modalChoices
+                  );
+                  const { after } = computeConfiguredPrices(
+                    optionModal.item,
+                    discountablePriceAdd,
+                    nonDiscountablePriceAdd
+                  );
+                  return (after * modalQty).toFixed(2);
+                })()}{" "}
+                ج.م
+              </p>
+
+              <button
+                type="button"
+                className="add-to-cart-btn"
+                style={{ width: "100%", marginBottom: "8px" }}
+                onClick={confirmAddConfiguredItem}
+              >
+                إضافة للسلة
+              </button>
+              <button
+                type="button"
+                onClick={closeOptionModal}
+                style={{
+                  width: "100%",
+                  background: "transparent",
+                  border: "none",
+                  color: "#888",
+                  padding: "8px",
+                }}
+              >
+                إلغاء
+              </button>
             </div>
           </div>
         )}
