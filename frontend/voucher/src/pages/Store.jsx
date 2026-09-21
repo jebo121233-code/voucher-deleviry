@@ -101,7 +101,14 @@ export default function Store() {
   };
 
   const selectRequiredChoice = (gIndex, cIndex) => {
-    setModalChoices((prev) => ({ ...prev, [gIndex]: cIndex }));
+    setModalChoices((prev) => {
+      if (prev[gIndex] === cIndex) {
+        const next = { ...prev };
+        delete next[gIndex];
+        return next;
+      }
+      return { ...prev, [gIndex]: cIndex };
+    });
   };
 
   const toggleOptionalChoice = (gIndex, cIndex) => {
@@ -463,8 +470,7 @@ export default function Store() {
                       <>
                         <button
                           type="button"
-                          className="qty-btn"
-                          style={{ width: "auto", padding: "0 12px" }}
+                          className="option-select-btn"
                           onClick={() => openOptionModal(item, index)}
                         >
                           🎛️ اختار وأضف
@@ -477,21 +483,8 @@ export default function Store() {
                             cfg.nonDiscountablePriceAdd
                           ).after;
                           return (
-                            <div
-                              key={cfg.key}
-                              style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                width: "100%",
-                                marginTop: "6px",
-                                padding: "6px 0",
-                                borderTop: "1px dashed #ccc",
-                                gap: "8px",
-                                flexWrap: "wrap",
-                              }}
-                            >
-                              <span style={{ fontSize: "13px", color: "#555" }}>
+                            <div key={cfg.key} className="config-row">
+                              <span className="config-row-summary">
                                 {cfg.summary || "بدون إضافات"}
                               </span>
                               <div className="quantity-control">
@@ -528,85 +521,45 @@ export default function Store() {
 
         {/* OPTIONS MODAL */}
         {optionModal && (
-          <div
-            onClick={closeOptionModal}
-            style={{
-              position: "fixed",
-              inset: 0,
-              background: "rgba(0,0,0,0.5)",
-              display: "flex",
-              alignItems: "flex-end",
-              justifyContent: "center",
-              zIndex: 1000,
-            }}
-          >
-            <div
-              onClick={(e) => e.stopPropagation()}
-              style={{
-                background: "#fff",
-                width: "100%",
-                maxWidth: "480px",
-                borderRadius: "16px 16px 0 0",
-                padding: "20px",
-                maxHeight: "80vh",
-                overflowY: "auto",
-              }}
-            >
-              <h4 style={{ marginBottom: "12px" }}>{optionModal.item.name}</h4>
+          <div className="options-modal-overlay" onClick={closeOptionModal}>
+            <div className="options-modal" onClick={(e) => e.stopPropagation()}>
+              <h4 className="options-modal-title">{optionModal.item.name}</h4>
 
               {optionModal.item.options.map((group, gIndex) => (
-                <div key={gIndex} style={{ marginBottom: "16px" }}>
-                  <p style={{ fontWeight: "bold", marginBottom: "6px" }}>
-                    {group.name} {group.required && <span style={{ color: "red" }}>*</span>}
+                <div key={gIndex} className="option-group">
+                  <p className="option-group-title">
+                    {group.name}{" "}
+                    {group.required && <span className="option-group-required-star">*</span>}
                   </p>
                   {group.choices.map((choice, cIndex) => {
                     const isChecked = group.required
                       ? modalChoices[gIndex] === cIndex
                       : (modalChoices[gIndex] || []).includes(cIndex);
                     return (
-                      <label
+                      <button
+                        type="button"
                         key={cIndex}
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                          padding: "8px 4px",
-                          borderBottom: "1px solid #eee",
-                          cursor: "pointer",
-                        }}
+                        className={`option-choice-btn${isChecked ? " selected" : ""}`}
+                        onClick={() =>
+                          group.required
+                            ? selectRequiredChoice(gIndex, cIndex)
+                            : toggleOptionalChoice(gIndex, cIndex)
+                        }
                       >
-                        <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                          <input
-                            type={group.required ? "radio" : "checkbox"}
-                            name={`group-${gIndex}`}
-                            checked={isChecked}
-                            onChange={() =>
-                              group.required
-                                ? selectRequiredChoice(gIndex, cIndex)
-                                : toggleOptionalChoice(gIndex, cIndex)
-                            }
-                          />
+                        <span className="option-choice-label">
                           {choice.label}
+                          {Number(choice.priceAdd) > 0 && (
+                            <span className="option-choice-price">+{choice.priceAdd} ج.م</span>
+                          )}
                         </span>
-                        {Number(choice.priceAdd) > 0 && (
-                          <span style={{ color: "#888", fontSize: "13px" }}>
-                            +{choice.priceAdd} ج.م
-                          </span>
-                        )}
-                      </label>
+                        <span className="option-choice-icon">{isChecked ? "🗑" : "+"}</span>
+                      </button>
                     );
                   })}
                 </div>
               ))}
 
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "space-between",
-                  margin: "16px 0",
-                }}
-              >
+              <div className="options-modal-qty-row">
                 <span>الكمية</span>
                 <div className="quantity-control">
                   <button
@@ -627,7 +580,7 @@ export default function Store() {
                 </div>
               </div>
 
-              <p style={{ fontWeight: "bold", marginBottom: "12px" }}>
+              <p className="options-modal-total">
                 الإجمالي:{" "}
                 {(() => {
                   const { discountablePriceAdd, nonDiscountablePriceAdd } = getConfigSummaryAndPrice(
@@ -646,22 +599,15 @@ export default function Store() {
 
               <button
                 type="button"
-                className="add-to-cart-btn"
-                style={{ width: "100%", marginBottom: "8px" }}
+                className="options-modal-confirm-btn"
                 onClick={confirmAddConfiguredItem}
               >
                 إضافة للسلة
               </button>
               <button
                 type="button"
+                className="options-modal-cancel-btn"
                 onClick={closeOptionModal}
-                style={{
-                  width: "100%",
-                  background: "transparent",
-                  border: "none",
-                  color: "#888",
-                  padding: "8px",
-                }}
               >
                 إلغاء
               </button>
