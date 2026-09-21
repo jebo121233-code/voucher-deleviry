@@ -472,7 +472,7 @@ export default function Admin() {
               <p>✅ تم إنشاء حساب مطعم "{approvedInfo.restaurantName}" بنجاح!</p>
               <p><strong>اليوزر نيم:</strong> {approvedInfo.username}</p>
               <p><strong>الباسورد:</strong> {approvedInfo.restaurantPassword}</p>
-              <div style={{ display: "flex", gap: "8px", marginTop: "10px", flexWrap: "wrap" }}>
+              <div className="admin-approved-actions">
                 <a
                   href={buildWhatsAppLink(
                     approvedInfo.phone,
@@ -480,12 +480,11 @@ export default function Admin() {
                   )}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="admin-toggle-btn"
-                  style={{ background: "#25D366", textDecoration: "none", textAlign: "center" }}
+                  className="admin-whatsapp-link"
                 >
                   📱 إرسال بيانات الدخول على واتساب
                 </a>
-                <button onClick={() => setApprovedInfo(null)}>إغلاق</button>
+                <button className="admin-close-btn" onClick={() => setApprovedInfo(null)}>إغلاق</button>
               </div>
             </div>
           )}
@@ -508,17 +507,19 @@ export default function Admin() {
                   <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "8px" }}>
                     <input
                       type="text"
+                      className="admin-partner-input"
                       placeholder="اليوزر نيم"
                       value={approveForms[req.rowIndex]?.username || ""}
                       onChange={(e) => handleApproveFormChange(req.rowIndex, "username", e.target.value)}
                     />
                     <input
                       type="text"
+                      className="admin-partner-input"
                       placeholder="الباسورد"
                       value={approveForms[req.rowIndex]?.password || ""}
                       onChange={(e) => handleApproveFormChange(req.rowIndex, "password", e.target.value)}
                     />
-                    <div style={{ display: "flex", gap: "8px" }}>
+                    <div className="admin-partner-actions">
                       <button
                         className="admin-toggle-btn"
                         style={{ background: "#4caf50" }}
