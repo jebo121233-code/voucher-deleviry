@@ -262,8 +262,8 @@
 }
 
 .menu-item-thumb {
-  width: 90px;
-  height: 90px;
+  width: 40px;
+  height: 40px;
   object-fit: cover;
   border-radius: 8px;
   flex-shrink: 0;
@@ -321,13 +321,185 @@
 
 .floating-add-to-cart {
   position: fixed;
-  bottom: 0;
+  bottom: 64px; /* فوق شريط التنقل السفلي بتاع الموقع */
   left: 0;
   right: 0;
   padding: 12px 16px;
   background: #fff;
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1);
-  z-index: 50;
+  z-index: 200;
 }
 
+/* ============ OPTIONS MODAL (size / add-ons picker) ============ */
 
+.option-select-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  background: #000;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 14px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+}
+
+.option-select-btn:active {
+  transform: scale(0.97);
+}
+
+.options-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.options-modal {
+  background: #fff;
+  width: 100%;
+  max-width: 480px;
+  border-radius: 16px 16px 0 0;
+  padding: 20px;
+  max-height: 80vh;
+  overflow-y: auto;
+  color: #000;
+}
+
+.options-modal-title {
+  margin-bottom: 14px;
+  font-size: 18px;
+  font-weight: 700;
+  color: #000;
+}
+
+.option-group {
+  margin-bottom: 18px;
+}
+
+.option-group-title {
+  font-weight: 700;
+  margin-bottom: 8px;
+  color: #000;
+  font-size: 14px;
+}
+
+.option-group-required-star {
+  color: #e53935;
+  margin-right: 4px;
+}
+
+/* الزرار اللي بيمثل كل اختيار (حجم / إضافة) - أسود دايمًا */
+.option-choice-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  background: #000;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  position: relative;
+  font-size: 14px;
+  font-family: inherit;
+  transition: transform 0.15s ease;
+}
+
+.option-choice-btn:active {
+  transform: scale(0.97);
+}
+
+/* دايرة صغيرة برتقالي تظهر لما الاختيار يبقى متحدد */
+.option-choice-btn.selected::after {
+  content: "";
+  position: absolute;
+  top: -5px;
+  left: -5px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
+  background: #ff8c00;
+  border: 2px solid #fff;
+}
+
+.option-choice-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.option-choice-price {
+  color: #ffcf9e;
+  font-size: 12px;
+}
+
+/* أيقونة + للإضافة و🗑 للإزالة */
+.option-choice-icon {
+  font-size: 16px;
+  min-width: 22px;
+  text-align: center;
+}
+
+.options-modal-qty-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin: 16px 0;
+  color: #000;
+}
+
+.options-modal-total {
+  font-weight: 700;
+  margin-bottom: 12px;
+  color: #000;
+}
+
+.options-modal-confirm-btn {
+  width: 100%;
+  margin-bottom: 8px;
+  background: #000;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.options-modal-cancel-btn {
+  width: 100%;
+  background: transparent;
+  border: none;
+  color: #888;
+  padding: 8px;
+  cursor: pointer;
+  font-family: inherit;
+}
+
+/* صف الاختيار اللي اتضاف فعلاً تحت الصنف في المنيو */
+.config-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  margin-top: 6px;
+  padding: 8px 0;
+  border-top: 1px dashed #ccc;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.config-row-summary {
+  font-size: 13px;
+  color: #555;
+}
