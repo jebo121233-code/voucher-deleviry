@@ -4,22 +4,30 @@ import "./Store.css";
 import { shops as fakeStores, MENU_STORE_KEYS, CART_SCRIPT_URL } from "../data/data.js";
 import { useCart } from "../context/CartContext.jsx";
 
-// يحسب ملخص الاختيارات، ويفصل السعر الإضافي لجزء بيتخصم عليه (زي الحجم) وجزء مش بيتخصم عليه (زي الصوصات)
+// يحسب ملخص الاختيارات: بيفرق بين مجموعة "priceMode: absolute" (زي الحجم - كل اختيار له سعر مستقل كامل)
+// ومجموعات الإضافة العادية (زي الصوصات - بتتضاف فوق السعر الأساسي)
 function getConfigSummaryAndPrice(item, choicesMap) {
   let summaryParts = [];
-  let discountablePriceAdd = 0;
-  let nonDiscountablePriceAdd = 0;
+  let discountableAdd = 0;
+  let nonDiscountableAdd = 0;
+  let baseOverride = null; // لو اتحدد، ده بيبقى السعر الأساسي بدل item.price
+  let baseOverrideDiscountable = true;
 
   (item.options || []).forEach((group, gIndex) => {
-    // discountable = true افتراضيًا لو مكتوبش صراحةً false
     const isDiscountable = group.discountable !== false;
+    const isAbsolute = group.priceMode === "absolute";
     const sel = choicesMap[gIndex];
 
     const applyChoice = (choice) => {
       summaryParts.push(choice.label);
-      const add = Number(choice.priceAdd) || 0;
-      if (isDiscountable) discountablePriceAdd += add;
-      else nonDiscountablePriceAdd += add;
+      if (isAbsolute) {
+        baseOverride = Number(choice.price) || 0;
+        baseOverrideDiscountable = isDiscountable;
+      } else {
+        const add = Number(choice.priceAdd) || 0;
+        if (isDiscountable) discountableAdd += add;
+        else nonDiscountableAdd += add;
+      }
     };
 
     if (group.required) {
@@ -32,7 +40,13 @@ function getConfigSummaryAndPrice(item, choicesMap) {
     }
   });
 
-  return { summary: summaryParts.join("، "), discountablePriceAdd, nonDiscountablePriceAdd };
+  return {
+    summary: summaryParts.join("، "),
+    discountableAdd,
+    nonDiscountableAdd,
+    baseOverride,
+    baseOverrideDiscountable,
+  };
 }
 
 // بيتأكد إن كل الأوبشنز الإجبارية (زي الحجم) اتحددت
@@ -42,15 +56,25 @@ function allRequiredSelected(item, choicesMap) {
   );
 }
 
-// بيحسب السعر قبل وبعد الخصم: الخصم بيتطبق على (السعر الأساسي + الإضافات القابلة للخصم) بس
-// والإضافات الغير قابلة للخصم (زي الصوص) بتتضاف بسعرها الكامل بعد الخصم
-function computeConfiguredPrices(item, discountablePriceAdd, nonDiscountablePriceAdd) {
-  const discountableBase = (item.price || 0) + discountablePriceAdd;
+// بيحسب السعر قبل وبعد الخصم:
+// - لو فيه حجم بسعر مستقل (baseOverride) بيتحط بدل سعر الصنف الأساسي
+// - الإضافات القابلة للخصم بتتجمع مع السعر الأساسي قبل حساب نسبة الخصم
+// - الإضافات الغير قابلة للخصم (زي الصوص) بتتضاف بسعرها الكامل بعد الخصم
+function computeConfiguredPrices(item, cfg) {
+  const hasOverride = cfg.baseOverride !== null && cfg.baseOverride !== undefined;
+  const baseAmount = hasOverride ? cfg.baseOverride : (item.price || 0);
+  const baseIsDiscountable = hasOverride ? cfg.baseOverrideDiscountable !== false : true;
+
   const discountPercent = item.discount_percent || 0;
+
+  const discountableBase = (baseIsDiscountable ? baseAmount : 0) + (cfg.discountableAdd || 0);
   const discountedBase = Math.round(discountableBase - (discountableBase * discountPercent) / 100);
 
-  const before = discountableBase + nonDiscountablePriceAdd;
-  const after = discountedBase + nonDiscountablePriceAdd;
+  const nonDiscountableBase = baseIsDiscountable ? 0 : baseAmount;
+
+  const before = baseAmount + (cfg.discountableAdd || 0) + (cfg.nonDiscountableAdd || 0);
+  const after = discountedBase + nonDiscountableBase + (cfg.nonDiscountableAdd || 0);
+
   return { before, after };
 }
 
@@ -130,7 +154,8 @@ export default function Store() {
       return;
     }
 
-    const { summary, discountablePriceAdd, nonDiscountablePriceAdd } = getConfigSummaryAndPrice(item, modalChoices);
+    const { summary, discountableAdd, nonDiscountableAdd, baseOverride, baseOverrideDiscountable } =
+      getConfigSummaryAndPrice(item, modalChoices);
     const key = JSON.stringify(modalChoices);
 
     setSelections((prev) => {
@@ -144,7 +169,16 @@ export default function Store() {
       } else {
         updated = [
           ...existing,
-          { key, choicesMap: modalChoices, summary, discountablePriceAdd, nonDiscountablePriceAdd, qty: modalQty },
+          {
+            key,
+            choicesMap: modalChoices,
+            summary,
+            discountableAdd,
+            nonDiscountableAdd,
+            baseOverride,
+            baseOverrideDiscountable,
+            qty: modalQty,
+          },
         ];
       }
       return { ...prev, [index]: updated };
@@ -184,11 +218,7 @@ export default function Store() {
       if (!item) return;
       configs.forEach((cfg) => {
         if (cfg.qty <= 0) return;
-        const { before, after } = computeConfiguredPrices(
-          item,
-          cfg.discountablePriceAdd,
-          cfg.nonDiscountablePriceAdd
-        );
+        const { before, after } = computeConfiguredPrices(item, cfg);
         configuredItems.push({
           itemId: `${item.itemId}-${cfg.key}`,
           name: cfg.summary ? `${item.name} (${cfg.summary})` : item.name,
@@ -477,11 +507,7 @@ export default function Store() {
                         </button>
 
                         {(selections[index] || []).map((cfg) => {
-                          const cfgUnitPrice = computeConfiguredPrices(
-                            item,
-                            cfg.discountablePriceAdd,
-                            cfg.nonDiscountablePriceAdd
-                          ).after;
+                          const cfgUnitPrice = computeConfiguredPrices(item, cfg).after;
                           return (
                             <div key={cfg.key} className="config-row">
                               <span className="config-row-summary">
@@ -548,9 +574,13 @@ export default function Store() {
                       >
                         <span className="option-choice-label">
                           {choice.label}
-                          {Number(choice.priceAdd) > 0 && (
-                            <span className="option-choice-price">+{choice.priceAdd} ج.م</span>
-                          )}
+                          {group.priceMode === "absolute"
+                            ? Number(choice.price) > 0 && (
+                                <span className="option-choice-price">{choice.price} ج.م</span>
+                              )
+                            : Number(choice.priceAdd) > 0 && (
+                                <span className="option-choice-price">+{choice.priceAdd} ج.م</span>
+                              )}
                         </span>
                         <span className="option-choice-icon">{isChecked ? "🗑" : "+"}</span>
                       </button>
@@ -583,15 +613,8 @@ export default function Store() {
               <p className="options-modal-total">
                 الإجمالي:{" "}
                 {(() => {
-                  const { discountablePriceAdd, nonDiscountablePriceAdd } = getConfigSummaryAndPrice(
-                    optionModal.item,
-                    modalChoices
-                  );
-                  const { after } = computeConfiguredPrices(
-                    optionModal.item,
-                    discountablePriceAdd,
-                    nonDiscountablePriceAdd
-                  );
+                  const cfg = getConfigSummaryAndPrice(optionModal.item, modalChoices);
+                  const { after } = computeConfiguredPrices(optionModal.item, cfg);
                   return (after * modalQty).toFixed(2);
                 })()}{" "}
                 ج.م
