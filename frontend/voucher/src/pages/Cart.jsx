@@ -282,12 +282,27 @@ export default function Cart() {
             <h3>🛵 دليفري من {cart.restaurant}</h3>
             <button className="remove-link" onClick={removeDeliveryItems}>إزالة</button>
           </div>
-          {cart.deliveryItems.map((item, idx) => (
-            <div className="cart-line" key={idx}>
-              <span>{item.name} × {item.qty}</span>
-              <span>{item.discounted_price * item.qty} ج.م</span>
-            </div>
-          ))}
+          {cart.deliveryItems.map((item, idx) => {
+            const beforeTotal = (item.price * item.qty).toFixed(2);
+            const afterTotal = (item.discounted_price * item.qty).toFixed(2);
+            const hasDiscount = Number(item.price) > Number(item.discounted_price);
+
+            return (
+              <div className="cart-line" key={idx}>
+                <span>{item.name} × {item.qty}</span>
+                <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  {hasDiscount && (
+                    <span style={{ color: "#999", textDecoration: "line-through", fontSize: "0.9em" }}>
+                      {beforeTotal} ج.م
+                    </span>
+                  )}
+                  <span style={{ color: "#28a745", fontWeight: "bold" }}>
+                    {afterTotal} ج.م
+                  </span>
+                </span>
+              </div>
+            );
+          })}
           <div className="cart-line"><span>رسوم التوصيل</span><span>{deliveryFeeTotal} ج.م</span></div>
         </div>
       )}
