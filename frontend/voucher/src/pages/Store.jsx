@@ -460,16 +460,21 @@ export default function Store() {
                        className="menu-item-thumb"
                      />
                     )}
-                      <span className="menu-item-name">{item.name}</span>
+                      <div className="menu-item-text">
+                        <span className="menu-item-name">{item.name}</span>
+                        {item.description && (
+                          <span className="menu-item-desc">{item.description}</span>
+                        )}
+                      </div>
                     </div>
 
-                    <span className="menu-item-prices">
-                      <span className="price-before">{item.price} ج.م</span>
-                      <span className="price-after">{item.discounted_price} ج.م</span>
-                    </span>
+                    <div className="menu-item-action">
+                      <span className="menu-item-prices">
+                        <span className="price-before">{item.price} ج.م</span>
+                        <span className="price-after">{item.discounted_price} ج.م</span>
+                      </span>
 
-                    {!hasOptions && (
-                      <>
+                      {!hasOptions && (
                         <div className="quantity-control">
                           <button
                             type="button"
@@ -487,57 +492,57 @@ export default function Store() {
                             +
                           </button>
                         </div>
+                      )}
 
-                        {qty > 0 && (
-                          <div className="item-total-price">
-                            الإجمالي: {totalPrice} ج.م
-                          </div>
-                        )}
-                      </>
-                    )}
-
-                    {hasOptions && (
-                      <>
+                      {hasOptions && (
                         <button
                           type="button"
                           className="option-select-btn"
                           onClick={() => openOptionModal(item, index)}
+                          aria-label="اختار وأضف"
                         >
-                          🎛️ اختار وأضف
+                          ›
                         </button>
+                      )}
+                    </div>
 
-                        {(selections[index] || []).map((cfg) => {
-                          const cfgUnitPrice = computeConfiguredPrices(item, cfg).after;
-                          return (
-                            <div key={cfg.key} className="config-row">
-                              <span className="config-row-summary">
-                                {cfg.summary || "بدون إضافات"}
-                              </span>
-                              <div className="quantity-control">
-                                <button
-                                  type="button"
-                                  className="qty-btn"
-                                  onClick={() => updateConfigQty(index, cfg.key, -1)}
-                                >
-                                  −
-                                </button>
-                                <span className="qty-value">{cfg.qty}</span>
-                                <button
-                                  type="button"
-                                  className="qty-btn"
-                                  onClick={() => updateConfigQty(index, cfg.key, 1)}
-                                >
-                                  +
-                                </button>
-                              </div>
-                              <span className="item-total-price">
-                                {(cfgUnitPrice * cfg.qty).toFixed(2)} ج.م
-                              </span>
-                            </div>
-                          );
-                        })}
-                      </>
+                    {!hasOptions && qty > 0 && (
+                      <div className="item-total-price">
+                        الإجمالي: {totalPrice} ج.م
+                      </div>
                     )}
+
+                    {hasOptions &&
+                      (selections[index] || []).map((cfg) => {
+                        const cfgUnitPrice = computeConfiguredPrices(item, cfg).after;
+                        return (
+                          <div key={cfg.key} className="config-row">
+                            <span className="config-row-summary">
+                              {cfg.summary || "بدون إضافات"}
+                            </span>
+                            <div className="quantity-control">
+                              <button
+                                type="button"
+                                className="qty-btn"
+                                onClick={() => updateConfigQty(index, cfg.key, -1)}
+                              >
+                                −
+                              </button>
+                              <span className="qty-value">{cfg.qty}</span>
+                              <button
+                                type="button"
+                                className="qty-btn"
+                                onClick={() => updateConfigQty(index, cfg.key, 1)}
+                              >
+                                +
+                              </button>
+                            </div>
+                            <span className="item-total-price">
+                              {(cfgUnitPrice * cfg.qty).toFixed(2)} ج.م
+                            </span>
+                          </div>
+                        );
+                      })}
                   </div>
                 );
               })}
