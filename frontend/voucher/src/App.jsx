@@ -22,6 +22,7 @@ import ResetPassword from "./pages/ResetPassword.jsx";
 import Admin from "./pages/Admin.jsx";
 import PartnerRegister from "./pages/PartnerRegister.jsx";
 import './App.css'
+import DeliveryRegister from "./pages/DeliveryRegister.jsx";
 
 function App() {
   return (
@@ -46,6 +47,7 @@ function App() {
           <Route path='/reset-password' element={<ResetPassword/>} />
           <Route path='/ve-weza-23jj03only' element={<Admin/>} />
           <Route path='/partner-register' element={<PartnerRegister/>} />
+          <Route path="/delivery-register" element={<DeliveryRegister />} />
         </Routes>
         <Footer />
         <BottomNav />
