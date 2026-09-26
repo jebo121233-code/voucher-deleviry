@@ -17,9 +17,19 @@ export default function Profile() {
     return (
       <div className="auth-container">
         <h2>لازم تسجل دخول الأول 🔒</h2>
-        <div className="signUp" style={{ display: "flex", gap: "10px", justifyContent: "center" }}>
-          <button onClick={() => navigate("/login")}>تسجيل الدخول</button>
-          <button onClick={() => navigate("/register")}>إنشاء حساب</button>
+        <div className="signUp" style={{ display: "flex", flexDirection: "column", gap: "10px", alignItems: "center" }}>
+          <button onClick={() => navigate("/login")} className="auth-choice-btn">
+            تسجيل الدخول
+          </button>
+          <button onClick={() => navigate("/register")} className="auth-choice-btn">
+            إنشاء حساب عميل
+          </button>
+          <button onClick={() => navigate("/partner-register")} className="auth-choice-btn partner-btn">
+            🤝 إضافة شريك
+          </button>
+          <button onClick={() => navigate("/delivery-register")} className="auth-choice-btn delivery-btn">
+            🛵 إنشاء حساب دليفري
+          </button>
         </div>
       </div>
     );
