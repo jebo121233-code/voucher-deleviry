@@ -38,12 +38,16 @@ export default function Admin() {
   const [offers, setOffers] = useState([]);
   const [partnerRequests, setPartnerRequests] = useState([]);
   const [restaurantAccounts, setRestaurantAccounts] = useState([]);
+  const [deliveryRequests, setDeliveryRequests] = useState([]);
+  const [deliveryAccounts, setDeliveryAccounts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [approvedInfo, setApprovedInfo] = useState(null);
+  const [approvedDeliveryInfo, setApprovedDeliveryInfo] = useState(null);
 
-  // بيانات اليوزر/الباسورد اللي بيكتبها الأدمن لكل طلب (keyed بـ rowIndex)
+  // بيانات اليوزر/الباسورد اللي بيكتبها الأدمن لكل طلب شراكة (keyed بـ rowIndex)
   const [approveForms, setApproveForms] = useState({});
   const [approvingRow, setApprovingRow] = useState(null);
+  const [approvingDeliveryRow, setApprovingDeliveryRow] = useState(null);
 
   const [offerForm, setOfferForm] = useState({
     title: "",
@@ -163,6 +167,40 @@ export default function Admin() {
     }
   };
 
+  const fetchDeliveryRequests = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(CART_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "adminGetDeliveryRequests", password }),
+      });
+      const data = await res.json();
+      if (data.success) setDeliveryRequests(data.requests);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchDeliveryAccounts = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(CART_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "adminGetDeliveryAccounts", password }),
+      });
+      const data = await res.json();
+      if (data.success) setDeliveryAccounts(data.accounts);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (!authenticated) return;
     if (tab === "orders") fetchOrders();
@@ -171,6 +209,10 @@ export default function Admin() {
     if (tab === "partners") {
       fetchPartnerRequests();
       fetchRestaurantAccounts();
+    }
+    if (tab === "delivery") {
+      fetchDeliveryRequests();
+      fetchDeliveryAccounts();
     }
   }, [authenticated, tab]);
 
@@ -291,6 +333,43 @@ export default function Admin() {
     }
   };
 
+  // الدليفري بالفعل حاطط الباسورد بتاعه وقت التسجيل، فالأدمن هنا بس بيوافق أو يرفض
+  const handleApproveDelivery = async (rowIndex) => {
+    setApprovingDeliveryRow(rowIndex);
+    try {
+      const res = await fetch(CART_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "adminApproveDelivery", password, rowIndex }),
+      });
+      const data = await res.json();
+      if (data.success) {
+        setApprovedDeliveryInfo(data);
+        fetchDeliveryRequests();
+        fetchDeliveryAccounts();
+      } else {
+        alert(data.error || "حصل خطأ");
+      }
+    } catch (err) {
+      alert("مشكلة في الاتصال");
+    } finally {
+      setApprovingDeliveryRow(null);
+    }
+  };
+
+  const handleRejectDelivery = async (rowIndex) => {
+    setDeliveryRequests((prev) => prev.map((r) => (r.rowIndex === rowIndex ? { ...r, status: "rejected" } : r)));
+    try {
+      await fetch(CART_SCRIPT_URL, {
+        method: "POST",
+        headers: { "Content-Type": "text/plain;charset=utf-8" },
+        body: JSON.stringify({ action: "adminRejectDelivery", password, rowIndex }),
+      });
+    } catch (err) {
+      console.error("فشل الرفض:", err);
+    }
+  };
+
   if (!authenticated) {
     return (
       <div className="admin-login-container">
@@ -327,7 +406,10 @@ export default function Admin() {
           🎟️ العروض
         </button>
         <button className={tab === "partners" ? "admin-tab active" : "admin-tab"} onClick={() => setTab("partners")}>
-          🤝 المطاعم
+          🤝 الشركاء
+        </button>
+        <button className={tab === "delivery" ? "admin-tab active" : "admin-tab"} onClick={() => setTab("delivery")}>
+          🛵 الدليفري
         </button>
       </div>
 
@@ -469,14 +551,14 @@ export default function Admin() {
         <>
           {approvedInfo && (
             <div className="admin-approved-box">
-              <p>✅ تم إنشاء حساب مطعم "{approvedInfo.restaurantName}" بنجاح!</p>
+              <p>✅ تم إنشاء حساب شريك "{approvedInfo.restaurantName}" بنجاح!</p>
               <p><strong>اليوزر نيم:</strong> {approvedInfo.username}</p>
               <p><strong>الباسورد:</strong> {approvedInfo.restaurantPassword}</p>
               <div className="admin-approved-actions">
                 <a
                   href={buildWhatsAppLink(
                     approvedInfo.phone,
-                    `مرحباً ${approvedInfo.ownerName} 👋\n\nتم تفعيل حساب مطعم "${approvedInfo.restaurantName}" على VE Voucher ✅\n\nبيانات الدخول:\nاليوزر نيم: ${approvedInfo.username}\nالباسورد: ${approvedInfo.restaurantPassword}\n\nمبروك الانضمام لينا 🎉`
+                    `مرحباً ${approvedInfo.ownerName} 👋\n\nتم تفعيل حساب "${approvedInfo.restaurantName}" على VE Voucher ✅\n\nبيانات الدخول:\nاليوزر نيم: ${approvedInfo.username}\nالباسورد: ${approvedInfo.restaurantPassword}\n\nمبروك الانضمام لينا 🎉`
                   )}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -499,8 +581,9 @@ export default function Admin() {
                   <span>{req.status === "pending" ? "⏳ قيد المراجعة" : req.status === "approved" ? "✅ مقبول" : "❌ مرفوض"}</span>
                 </div>
                 <div className="admin-card-body">
-                  <span>صاحب المطعم: {req.ownerName}</span>
+                  <span>صاحب النشاط: {req.ownerName}</span>
                   <span>الرقم: {req.phone}</span>
+                  {req.category && <span>النشاط: {req.category}</span>}
                   <span>{new Date(req.timestamp).toLocaleString("ar-EG")}</span>
                 </div>
                 {req.status === "pending" && (
@@ -542,7 +625,7 @@ export default function Admin() {
             ))}
           </div>
 
-          <h3 style={{ margin: "20px 0 10px" }}>🍽️ حسابات المطاعم النشطة</h3>
+          <h3 style={{ margin: "20px 0 10px" }}>🏪 حسابات الشركاء النشطة</h3>
           <div className="admin-list">
             {restaurantAccounts.length === 0 && <p style={{ textAlign: "center" }}>مفيش حسابات لسه</p>}
             {restaurantAccounts.map((acc) => (
@@ -552,10 +635,95 @@ export default function Admin() {
                   <span>{acc.status === "active" ? "🟢 نشط" : "🔴 موقوف"}</span>
                 </div>
                 <div className="admin-card-body">
-                  <span>صاحب المطعم: {acc.ownerName}</span>
+                  <span>صاحب النشاط: {acc.ownerName}</span>
                   <span>الرقم: {acc.phone}</span>
+                  {acc.category && <span>النشاط: {acc.category}</span>}
                   <span>اليوزر نيم: {acc.username}</span>
                   <span>الباسورد: {acc.password}</span>
+                  <span>تاريخ الإنشاء: {new Date(acc.createdAt).toLocaleDateString("ar-EG")}</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </>
+      )}
+
+      {tab === "delivery" && !loading && (
+        <>
+          {approvedDeliveryInfo && (
+            <div className="admin-approved-box">
+              <p>✅ تم تفعيل حساب الدليفري "{approvedDeliveryInfo.name}" بنجاح!</p>
+              <p><strong>الرقم:</strong> {approvedDeliveryInfo.phone}</p>
+              <p><strong>الباسورد:</strong> {approvedDeliveryInfo.password}</p>
+              <div className="admin-approved-actions">
+                <a
+                  href={buildWhatsAppLink(
+                    approvedDeliveryInfo.phone,
+                    `مرحباً ${approvedDeliveryInfo.name} 👋\n\nتم تفعيل حسابك كمندوب دليفري على VE Voucher ✅\n\nبيانات الدخول:\nالرقم: ${approvedDeliveryInfo.phone}\nالباسورد: ${approvedDeliveryInfo.password}\n\nمبروك الانضمام لينا 🎉`
+                  )}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="admin-whatsapp-link"
+                >
+                  📱 إبلاغه على واتساب
+                </a>
+                <button className="admin-close-btn" onClick={() => setApprovedDeliveryInfo(null)}>إغلاق</button>
+              </div>
+            </div>
+          )}
+
+          <h3 style={{ margin: "10px 0" }}>📋 طلبات الدليفري</h3>
+          <div className="admin-list">
+            {deliveryRequests.length === 0 && <p style={{ textAlign: "center" }}>مفيش طلبات</p>}
+            {deliveryRequests.map((req) => (
+              <div key={req.rowIndex} className="admin-card">
+                <div className="admin-card-header">
+                  <strong>{req.name}</strong>
+                  <span>{req.status === "pending" ? "⏳ قيد المراجعة" : req.status === "approved" ? "✅ مقبول" : "❌ مرفوض"}</span>
+                </div>
+                <div className="admin-card-body">
+                  <span>الرقم: {req.phone}</span>
+                  <span>المركبة: {req.vehicleType}</span>
+                  <span>المنطقة: {req.region}</span>
+                  <span>{new Date(req.timestamp).toLocaleString("ar-EG")}</span>
+                </div>
+                {req.status === "pending" && (
+                  <div className="admin-partner-actions" style={{ marginTop: "8px" }}>
+                    <button
+                      className="admin-toggle-btn"
+                      style={{ background: "#4caf50" }}
+                      onClick={() => handleApproveDelivery(req.rowIndex)}
+                      disabled={approvingDeliveryRow === req.rowIndex}
+                    >
+                      {approvingDeliveryRow === req.rowIndex ? "جارٍ الموافقة..." : "✅ موافقة"}
+                    </button>
+                    <button
+                      className="admin-toggle-btn"
+                      style={{ background: "#c62828" }}
+                      onClick={() => handleRejectDelivery(req.rowIndex)}
+                    >
+                      ❌ رفض
+                    </button>
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+
+          <h3 style={{ margin: "20px 0 10px" }}>🛵 حسابات الدليفري النشطة</h3>
+          <div className="admin-list">
+            {deliveryAccounts.length === 0 && <p style={{ textAlign: "center" }}>مفيش حسابات لسه</p>}
+            {deliveryAccounts.map((acc) => (
+              <div key={acc.rowIndex} className="admin-card">
+                <div className="admin-card-header">
+                  <strong>{acc.name}</strong>
+                  <span>{acc.status === "active" ? "🟢 نشط" : "🔴 موقوف"}</span>
+                </div>
+                <div className="admin-card-body">
+                  <span>الرقم: {acc.phone}</span>
+                  <span>الباسورد: {acc.password}</span>
+                  <span>المركبة: {acc.vehicleType}</span>
+                  <span>المنطقة: {acc.region}</span>
                   <span>تاريخ الإنشاء: {new Date(acc.createdAt).toLocaleDateString("ar-EG")}</span>
                 </div>
               </div>
