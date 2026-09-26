@@ -2,8 +2,24 @@ import { useState } from "react";
 import "./auth.css";
 import { CART_SCRIPT_URL } from "../data/data.js";
 
+const PARTNER_CATEGORIES = [
+  "مطعم",
+  "كافيه",
+  "محل ملابس رجالي",
+  "محل ملابس حريمي",
+  "محل ملابس أطفال",
+  "محل أحذية",
+  "محلات كلاسيك",
+  "محل إكسسوارات وعطور",
+  "محل ميكب",
+  "جيم",
+  "محل أدوات رياضية",
+  "سوبر ماركت",
+  "أكاديمية كورسات",
+];
+
 export default function PartnerRegister() {
-  const [form, setForm] = useState({ restaurantName: "", ownerName: "", phone: "" });
+  const [form, setForm] = useState({ restaurantName: "", ownerName: "", phone: "", category: "" });
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
@@ -14,6 +30,12 @@ export default function PartnerRegister() {
     e.preventDefault();
     setError("");
     setMessage("");
+
+    if (!form.category) {
+      setError("من فضلك اختار نوع النشاط");
+      return;
+    }
+
     setLoading(true);
     try {
       const res = await fetch(CART_SCRIPT_URL, {
@@ -24,7 +46,7 @@ export default function PartnerRegister() {
       const data = await res.json();
       if (data.success) {
         setMessage("✅ تم استلام طلبك بنجاح! هنتواصل معاك على الواتساب بعد المراجعة.");
-        setForm({ restaurantName: "", ownerName: "", phone: "" });
+        setForm({ restaurantName: "", ownerName: "", phone: "", category: "" });
       } else {
         setError(data.error || "حصل خطأ");
       }
@@ -37,15 +59,25 @@ export default function PartnerRegister() {
 
   return (
     <div className="auth-container">
-      <h2>🤝 انضم كمطعم شريك</h2>
+      <h2>🤝 إضافة شريك</h2>
       <p style={{ textAlign: "center", fontSize: "14px", color: "#666" }}>
         قدّم طلبك وهنتواصل معاك بعد المراجعة لتفعيل حسابك
       </p>
       <form onSubmit={handleSubmit}>
+        <select name="category" value={form.category} onChange={handleChange} required>
+          <option value="" disabled>
+            اختار نوع النشاط
+          </option>
+          {PARTNER_CATEGORIES.map((cat) => (
+            <option key={cat} value={cat}>
+              {cat}
+            </option>
+          ))}
+        </select>
         <input
           type="text"
           name="restaurantName"
-          placeholder="اسم المطعم"
+          placeholder="اسم المحل / النشاط"
           value={form.restaurantName}
           onChange={handleChange}
           required
@@ -53,7 +85,7 @@ export default function PartnerRegister() {
         <input
           type="text"
           name="ownerName"
-          placeholder="اسم صاحب المطعم"
+          placeholder="اسم صاحب النشاط"
           value={form.ownerName}
           onChange={handleChange}
           required
