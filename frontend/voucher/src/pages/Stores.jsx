@@ -1,11 +1,10 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import axios from "axios";
-import { useLocation } from "react-router-dom";
 import "./Stores.css";
-import { shops as fakeStores }  from '../data/data.js';
-import { categories as fakeCategories }  from '../data/data.js';
+import { shops as fakeStores } from '../data/data.js';
+import { categories as fakeCategories } from '../data/data.js';
+import { assetUrl } from '../data/imageUtil.js';
 
 export default function Store() {
   const navigate = useNavigate();
@@ -32,7 +31,7 @@ export default function Store() {
   };
 
   // Fetch categories
-  const fetchCategories = async (category) => {
+  const fetchCategories = async () => {
     try {
       const res = await axios.get("http://localhost:5000/api/category/list");
       setCategories(res.data.categories);
@@ -44,13 +43,14 @@ export default function Store() {
 
   const location = useLocation();
 
-useEffect(() => {
-  const params = new URLSearchParams(location.search);
-  const category = params.get("category");
-  
-  fetchStores(category);
-  fetchCategories();
-}, [location.search]);
+  useEffect(() => {
+    const params = new URLSearchParams(location.search);
+    const category = params.get("category");
+
+    fetchStores(category);
+    fetchCategories();
+    // fakeStores.length: لما محلات الشيت تتحمّل القايمة تتحدّث لوحدها
+  }, [location.search, fakeStores.length]);
 
   // When dropdown changes
   const handleCategoryChange = (e) => {
@@ -95,11 +95,11 @@ useEffect(() => {
                   {store.status}
                 </div>
               )}
-              
+
               {/* image fix */}
               {store.logos?.[0] ? (
                 <img
-                  src={`/${store.logos[0]}`}
+                  src={assetUrl(store.logos[0])}
                   alt={store.name}
                 />
               ) : null}
@@ -118,8 +118,6 @@ useEffect(() => {
                   <p key={index}>{address}</p>
                 ))
               }
-
-              {/* <button>Buy Now</button> */}
             </div>
           ))
         )}
