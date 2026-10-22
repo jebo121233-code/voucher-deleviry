@@ -88,6 +88,9 @@ export default function Store() {
   const [loading, setLoading] = useState(true);
   const [menuItems, setMenuItems] = useState([]);
   const [menuLoading, setMenuLoading] = useState(false);
+  // من السيرفر: نقاط تفعيل الخصم (0 = من غير نقاط) + هل التوصيل متاح للمحل ده
+  const [pointsRequired, setPointsRequired] = useState(0);
+  const [deliveryEnabled, setDeliveryEnabled] = useState(true);
   const [selectedImageIndex, setSelectedImageIndex] = useState(null);
   const [quantities, setQuantities] = useState({});
 
@@ -99,10 +102,16 @@ export default function Store() {
 
   const getQuantity = (index) => quantities[index] || 0;
 
+  // stock: رقم = المتاح، غير كده من غير حد
+  const maxFor = (index) => {
+    const st = menuItems[index] && menuItems[index].stock;
+    return typeof st === "number" ? st : Infinity;
+  };
+
   const increaseQty = (index) => {
     setQuantities((prev) => ({
       ...prev,
-      [index]: getQuantity(index) + 1,
+      [index]: Math.min(maxFor(index), getQuantity(index) + 1),
     }));
   };
 
@@ -235,8 +244,8 @@ export default function Store() {
 
     if (selectedItems.length === 0) return;
 
-    addDeliveryItems(store.name, store.id, selectedItems);
-    navigate("/cart");
+    const added = addDeliveryItems(store.name, store.id, selectedItems, { pointsRequired });
+    if (added) navigate("/cart");
   };
 
   useEffect(() => {
@@ -266,6 +275,8 @@ export default function Store() {
         const data = await res.json();
         if (data.success) {
           setMenuItems(data.items);
+          setPointsRequired(Number(data.pointsRequired) || 0);
+          setDeliveryEnabled(data.deliveryEnabled !== false);
         } else {
           setMenuItems([]);
         }
@@ -448,6 +459,16 @@ export default function Store() {
         {!menuLoading && menuItems.length > 0 && (
           <div className="store-menu">
             <h3>المنيو</h3>
+            {!deliveryEnabled && (
+              <p style={{ textAlign: "center", color: "#7a5c00", background: "#fff8e1", borderRadius: "8px", padding: "8px 12px" }}>
+                التوصيل مش متاح للمحل ده، تقدر تشوف المنتجات والأسعار وتزور المحل.
+              </p>
+            )}
+            {deliveryEnabled && pointsRequired > 0 && (
+              <p style={{ textAlign: "center", color: "#7a5c00", background: "#fff8e1", borderRadius: "8px", padding: "8px 12px" }}>
+                ⭐ خصم المحل ده بيتفعّل باستخدام {pointsRequired} نقطة من رصيدك وقت تأكيد الطلب.
+              </p>
+            )}
             <div className="menu-list">
               {menuItems.map((item, index) => {
                 const hasOptions = item.options && item.options.length > 0;
@@ -479,7 +500,7 @@ export default function Store() {
                         <span className="price-after">{item.discounted_price} ج.م</span>
                       </span>
 
-                      {!hasOptions && (
+                      {deliveryEnabled && !hasOptions && (
                         <div className="quantity-control">
                           <button
                             type="button"
@@ -492,6 +513,7 @@ export default function Store() {
                           <button
                             type="button"
                             className="qty-btn"
+                            disabled={qty >= maxFor(index)}
                             onClick={() => increaseQty(index)}
                           >
                             +
@@ -499,7 +521,7 @@ export default function Store() {
                         </div>
                       )}
 
-                      {hasOptions && (
+                      {deliveryEnabled && hasOptions && (
                         <button
                           type="button"
                           className="option-select-btn"
@@ -649,7 +671,7 @@ export default function Store() {
         )}
 
         {/* ADD TO CART - floating button */}
-        {selectedItemsCount > 0 && (
+        {deliveryEnabled && selectedItemsCount > 0 && (
           <div className="floating-add-to-cart">
             <button
               type="button"
