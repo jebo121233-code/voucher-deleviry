@@ -5,7 +5,7 @@ import "./Delivery.css";
 import "./Cart.css";
 import { useCart } from "../context/CartContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
-import { CART_SCRIPT_URL, WHATSAPP_NUMBER } from "../data/data.js";
+import { CART_SCRIPT_URL, WHATSAPP_NUMBER, MENU_STORE_KEYS } from "../data/data.js";
 
 const CARD_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfL4bWVRHsgjOa2I5J2RC38pF2olaUMWsVghwxfuz9MrJyslA/formResponse";
 
@@ -24,6 +24,7 @@ const CARD_FORM_ENTRIES = {
 
 const VODAFONE_CASH_NUMBER = "01025311724";
 
+// ⚠️ اسم الـ label لازم يفضل فيه كلمة "فودافون" عشان السيرفر يعتبر الدفع محتاج مراجعة
 const PAYMENT_METHODS = {
   cash: { label: "💵 كاش عند الاستلام", needsTransfer: false },
   wallet: {
@@ -34,11 +35,23 @@ const PAYMENT_METHODS = {
   },
 };
 
+const digitsOnly = (v) => String(v || "").replace(/\D/g, "");
+
+async function postJson(body) {
+  const res = await fetch(CART_SCRIPT_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(body),
+  });
+  return res.json();
+}
+
 export default function Cart() {
   const navigate = useNavigate();
-  const { user, isLoggedIn, updateAddresses } = useAuth();
+  const { user, isLoggedIn, updateAddresses, refreshUser, updateUser } = useAuth();
   const {
-    cart, removeDeliveryItems, updateCardQty, removeCard, clearCart,
+    cart, removeDeliveryItems, setUsePoints, updateCardQty, removeCard, clearCart,
+    discountActive, unitPrice, potentialSaving,
     deliverySubtotalBefore, deliverySubtotalAfter, hasDelivery, deliveryFeeTotal,
     cardsSubtotal, cardsShippingTotal, grandTotal, itemsCount,
   } = useCart();
@@ -52,25 +65,46 @@ export default function Cart() {
     addressLabel: "",
     paymentMethod: "cash",
     transactionRef: "",
+    senderPhone: "",
   });
 
   const [addressMode, setAddressMode] = useState(addresses.length > 0 ? "select" : "new");
   const [selectedAddressId, setSelectedAddressId] = useState(addresses[0]?.id || null);
+  const [coords, setCoords] = useState(null); // { lat, lng, accuracy }
+  const [locating, setLocating] = useState(false);
+  const [locationError, setLocationError] = useState("");
   const [copied, setCopied] = useState(false);
   const [sending, setSending] = useState(false);
-  const [message, setMessage] = useState("");
+  const [errorMsg, setErrorMsg] = useState("");
+  const [done, setDone] = useState(null); // { orderId, status, pointsUsed, whatsappUrl, isTransfer }
 
   const selectedPayment = PAYMENT_METHODS[form.paymentMethod];
+
+  const pointsRequired = hasDelivery ? Number(cart.pointsRequired) || 0 : 0;
+  const balance = Number(user?.points) || 0;
+  const canUsePoints = pointsRequired > 0 && balance >= pointsRequired;
+  const usingPoints = pointsRequired > 0 && cart.usePoints && canUsePoints;
 
   useEffect(() => {
     if (addressMode === "select" && selectedAddressId) {
       const found = addresses.find((a) => a.id === selectedAddressId);
-      if (found) setForm((prev) => ({ ...prev, address: found.address }));
+      if (found) {
+        setForm((prev) => ({ ...prev, address: found.address }));
+        setCoords(
+          typeof found.lat === "number" && typeof found.lng === "number" ? { lat: found.lat, lng: found.lng } : null
+        );
+      }
     }
     if (addressMode === "new") {
       setForm((prev) => ({ ...prev, address: "", addressLabel: "" }));
+      setCoords(null);
     }
   }, [addressMode, selectedAddressId]);
+
+  // لو الرصيد مبقاش كفاية (مثلًا بدّل الحساب) نلغي استخدام النقاط
+  useEffect(() => {
+    if (cart.usePoints && !canUsePoints) setUsePoints(false);
+  }, [cart.usePoints, canUsePoints]);
 
   // 🔒 لازم تسجيل دخول عشان تقدر تطلب
   if (!isLoggedIn) {
@@ -110,78 +144,152 @@ export default function Cart() {
     }
   };
 
+  // 📍 موقعي الحالي: بيساعد الدليفري يوصلك بالظبط
+  const handleLocate = () => {
+    setLocationError("");
+    if (!navigator.geolocation) {
+      setLocationError("الموبايل أو المتصفح مش بيدعم تحديد الموقع");
+      return;
+    }
+    setLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      (pos) => {
+        setCoords({ lat: pos.coords.latitude, lng: pos.coords.longitude, accuracy: Math.round(pos.coords.accuracy || 0) });
+        setLocating(false);
+      },
+      (err) => {
+        setLocating(false);
+        setLocationError(
+          err && err.code === 1
+            ? "لازم تسمح للتطبيق بالوصول للموقع من الإعدادات"
+            : "مقدرناش نحدد موقعك، جرب تاني أو اكتب العنوان بالتفصيل"
+        );
+      },
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+    );
+  };
+
   const isEmpty = itemsCount === 0;
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (isEmpty) return;
+  const buildWhatsAppUrl = (orderId, status) => {
+    const lines = [
+      `طلب جديد من السلة 🛒`,
+      orderId ? `رقم الطلب: ${orderId}` : "",
+      `الاسم: ${form.name}`,
+      `رقم الواتساب: ${form.whatsapp}`,
+      `العنوان: ${form.address}`,
+      `طريقة الدفع: ${selectedPayment.label}`,
+      "",
+    ];
+    if (hasDelivery) {
+      lines.push(`--- دليفري من ${cart.restaurant} ---`);
+      cart.deliveryItems.forEach((i) => lines.push(`- ${i.name} × ${i.qty} = ${unitPrice(i) * i.qty} ج.م`));
+      lines.push(`إجمالي الأصناف: ${deliverySubtotalAfter} ج.م`);
+      lines.push(`رسوم التوصيل: ${deliveryFeeTotal} ج.م`);
+      if (usingPoints) lines.push(`⭐ تم استخدام ${pointsRequired} نقطة لتفعيل الخصم`);
+      lines.push("");
+    }
+    if (cart.cardItems.length > 0) {
+      lines.push(`--- كروت الخصم ---`);
+      cart.cardItems.forEach((c) => lines.push(`- ${c.name} × ${c.qty} = ${c.price * c.qty} ج.م`));
+      lines.push("");
+    }
+    lines.push(`الإجمالي النهائي: ${grandTotal} ج.م`);
+    if (selectedPayment.needsTransfer) {
+      lines.push("");
+      lines.push(`💳 تم التحويل على: ${selectedPayment.destinationLabel} (${selectedPayment.destinationValue})`);
+      lines.push(`من رقم: ${form.senderPhone}`);
+      lines.push(`آخر 6 أرقام من عملية التحويل: ${form.transactionRef}`);
+      lines.push("⚠️ برجاء إرسال سكرين شوت إثبات التحويل هنا");
+    }
+    return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(lines.join("\n"))}`;
+  };
 
-    if (selectedPayment.needsTransfer && !form.transactionRef.trim()) {
-      alert("من فضلك اكتب آخر 6 أرقام من عملية التحويل قبل تأكيد الطلب");
-      return;
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    if (isEmpty || sending) return;
+    setErrorMsg("");
+
+    if (selectedPayment.needsTransfer) {
+      const sender = digitsOnly(form.senderPhone);
+      if (sender.length < 10 || sender.length > 13) {
+        setErrorMsg("اكتب رقم المحفظة اللي حوّلت منها (11 رقم)");
+        return;
+      }
+      if (!form.transactionRef.trim()) {
+        setErrorMsg("من فضلك اكتب آخر 6 أرقام من عملية التحويل قبل تأكيد الطلب");
+        return;
+      }
     }
 
     setSending(true);
 
-    // ---------- حفظ عنوان جديد لو المستخدم دخل عنوان جديد ----------
+    // ---------- بيانات الأوردر ----------
+    const paymentMethodText = selectedPayment.label;
+    const deliveryItemsText = hasDelivery
+      ? cart.deliveryItems.map((i) => `${i.name} × ${i.qty} = ${unitPrice(i) * i.qty} ج.م`).join(" | ")
+      : "";
+    const cardsText = cart.cardItems.length > 0
+      ? cart.cardItems.map((c) => `${c.name} × ${c.qty} = ${c.price * c.qty} ج.م`).join(" | ")
+      : "";
+
+    const itemsText = hasDelivery ? deliveryItemsText : cardsText;
+    const storeName = hasDelivery ? cart.restaurant : cart.cardItems.map((c) => c.store || c.name).join(", ");
+    // السيرفر بيربط المطعم والمخزون باسم تاب المنيو (Rolz) مش برقم المحل في الموقع (11)
+    const storeKey = hasDelivery ? MENU_STORE_KEYS[String(cart.restaurantId)] || String(cart.restaurantId || "") : "";
+
+    const newOrderData = {
+      action: "createOrder",
+      customerPhone: user.phone,
+      customerName: form.name,
+      storeId: storeKey,
+      storeName,
+      items: itemsText,
+      total: grandTotal,
+      paymentMethod: paymentMethodText,
+      address: form.address,
+      status: "pending",
+      lines: hasDelivery ? cart.deliveryItems.map((i) => ({ itemId: i.itemId, qty: i.qty })) : [],
+      usePoints: usingPoints,
+    };
+    if (coords) {
+      newOrderData.customerLat = coords.lat;
+      newOrderData.customerLng = coords.lng;
+    }
+    if (selectedPayment.needsTransfer) {
+      newOrderData.paymentSender = digitsOnly(form.senderPhone);
+      newOrderData.paymentRef = form.transactionRef.trim();
+    }
+
+    // ---------- 1) تسجيل الأوردر في السيرفر (لازم ننتظر الرد: المخزون / النقاط / التوصيل ممكن يرفضوه) ----------
+    let result;
+    try {
+      result = await postJson(newOrderData);
+    } catch (err) {
+      setSending(false);
+      setErrorMsg("مشكلة في الاتصال، الطلب لم يتم. جرب تاني.");
+      return;
+    }
+    if (!result || !result.success) {
+      setSending(false);
+      setErrorMsg((result && result.error) || "حصل خطأ، الطلب لم يتم");
+      return;
+    }
+
+    // ---------- 2) حفظ عنوان جديد لو المستخدم دخل عنوان جديد ----------
     if (addressMode === "new" && form.address.trim()) {
       const alreadyExists = addresses.some((a) => a.address.trim() === form.address.trim());
       if (!alreadyExists) {
-        const updated = [
-          ...addresses,
-          { id: Date.now(), label: form.addressLabel.trim() || "عنوان جديد", address: form.address.trim() },
-        ];
-        updateAddresses(updated);
+        const entry = { id: Date.now(), label: form.addressLabel.trim() || "عنوان جديد", address: form.address.trim() };
+        if (coords) {
+          entry.lat = coords.lat;
+          entry.lng = coords.lng;
+        }
+        updateAddresses([...addresses, entry]);
       }
     }
 
-    const paymentMethodText = selectedPayment.label;
-
-    let messageParts = [
-      `طلب جديد من السلة 🛒`,
-      `الاسم: ${form.name}`,
-      `رقم الواتساب: ${form.whatsapp}`,
-      `العنوان: ${form.address}`,
-      `طريقة الدفع: ${paymentMethodText}`,
-      "",
-    ];
-
-    let deliveryItemsText = "";
-    if (hasDelivery) {
-      messageParts.push(`--- دليفري من ${cart.restaurant} ---`);
-      deliveryItemsText = cart.deliveryItems.map((i) => `${i.name} × ${i.qty} = ${i.discounted_price * i.qty} ج.م`).join(" | ");
-      cart.deliveryItems.forEach((i) => {
-        messageParts.push(`- ${i.name} × ${i.qty} = ${i.discounted_price * i.qty} ج.م`);
-      });
-      messageParts.push(`إجمالي الأصناف بعد الخصم: ${deliverySubtotalAfter} ج.م`);
-      messageParts.push(`رسوم التوصيل: ${deliveryFeeTotal} ج.م`);
-      messageParts.push("");
-    }
-
-    let cardsText = "";
-    if (cart.cardItems.length > 0) {
-      messageParts.push(`--- كروت الخصم ---`);
-      cardsText = cart.cardItems.map((c) => `${c.name} × ${c.qty} = ${c.price * c.qty} ج.م`).join(" | ");
-      cart.cardItems.forEach((c) => {
-        messageParts.push(`- ${c.name} × ${c.qty} = ${c.price * c.qty} ج.م`);
-      });
-      messageParts.push("");
-    }
-
-    const totalShippingFee = (hasDelivery ? deliveryFeeTotal : 0) + (cart.cardItems.length > 0 ? 10 : 0);
-    messageParts.push(`رسوم الشحن: ${totalShippingFee} ج.م`);
-    messageParts.push(`الإجمالي النهائي: ${grandTotal} ج.م`);
-
-    if (selectedPayment.needsTransfer) {
-      messageParts.push("");
-      messageParts.push(`💳 تم التحويل على: ${selectedPayment.destinationLabel} (${selectedPayment.destinationValue})`);
-      messageParts.push(`آخر 6 أرقام من عملية التحويل: ${form.transactionRef}`);
-      messageParts.push("⚠️ برجاء إرسال سكرين شوت إثبات التحويل هنا على الواتساب");
-    }
-
-    window.open(`https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(messageParts.join("\n"))}`, "_blank");
-
-    // ---------- 1) الأوردر القديم (زي ما هو، من غير أي تغيير) ----------
+    // ---------- 3) الأوردر القديم (زي ما هو، من غير أي تغيير) ----------
     const orderData = {
       first_name: form.name,
       whatsapp: form.whatsapp,
@@ -199,7 +307,6 @@ export default function Cart() {
       cards_shipping: cart.cardItems.length > 0 ? cardsShippingTotal : "",
       grand_total: grandTotal,
     };
-
     const payload = new Blob([JSON.stringify(orderData)], { type: "text/plain;charset=utf-8" });
     const sent = navigator.sendBeacon(CART_SCRIPT_URL, payload);
     if (!sent) {
@@ -209,35 +316,6 @@ export default function Cart() {
         body: JSON.stringify(orderData),
         keepalive: true,
       }).catch((err) => console.error("خطأ في الاتصال بالسيرفر:", err));
-    }
-
-    // ---------- 2) 🆕 تسجيل الأوردر في تاب Orders (مربوط بحساب المستخدم) ----------
-    const itemsText = hasDelivery ? deliveryItemsText : cardsText;
-    const storeName = hasDelivery ? cart.restaurant : (cart.cardItems.map((c) => c.store || c.name).join(", "));
-    const storeId = hasDelivery ? (cart.restaurantId || "") : "";
-
-    const newOrderData = {
-      action: "createOrder",
-      customerPhone: user.phone,
-      customerName: form.name,
-      storeId: storeId,
-      storeName: storeName,
-      items: itemsText,
-      total: grandTotal,
-      paymentMethod: paymentMethodText,
-      address: form.address,
-      status: "pending",
-    };
-
-    const orderPayload = new Blob([JSON.stringify(newOrderData)], { type: "text/plain;charset=utf-8" });
-    const orderSent = navigator.sendBeacon(CART_SCRIPT_URL, orderPayload);
-    if (!orderSent) {
-      fetch(CART_SCRIPT_URL, {
-        method: "POST",
-        headers: { "Content-Type": "text/plain;charset=utf-8" },
-        body: JSON.stringify(newOrderData),
-        keepalive: true,
-      }).catch((err) => console.error("خطأ في تسجيل الأوردر:", err));
     }
 
     const cardTierText = cart.cardItems.map((c) => `${c.name} × ${c.qty}`).join(", ");
@@ -256,10 +334,52 @@ export default function Cart() {
     formData.append(CARD_FORM_ENTRIES.status, "");
     navigator.sendBeacon(CARD_FORM_URL, formData);
 
-    setMessage("✅ جارٍ تحويلك للواتساب... متنساش تبعت سكرين شوت التحويل لو دفعت أونلاين");
+    // ---------- 4) شاشة النجاح + تحديث رصيد النقاط ----------
+    const pointsUsed = Number(result.pointsUsed) || 0;
+    if (pointsUsed > 0) updateUser({ points: Math.max(0, balance - pointsUsed) });
+    const whatsappUrl = buildWhatsAppUrl(result.orderId, result.status);
+    setDone({
+      orderId: result.orderId,
+      status: result.status,
+      pointsUsed,
+      whatsappUrl,
+      isTransfer: selectedPayment.needsTransfer,
+    });
     clearCart();
-    setTimeout(() => navigate("/"), 2000);
+    setSending(false);
+    refreshUser();
   };
+
+  if (done) {
+    const underReview = done.status === "payment_review";
+    return (
+      <div className="auth-container">
+        <h2>✅ تم تسجيل طلبك</h2>
+        <p style={{ textAlign: "center" }}>رقم الطلب: <strong>{done.orderId}</strong></p>
+        {underReview ? (
+          <p style={{ textAlign: "center" }}>
+            التحويل تحت المراجعة. أول ما نتأكد منه هنبعت طلبك للمطعم فورًا.
+            <br />
+            ⚠️ ابعت لنا <strong>سكرين شوت</strong> إثبات التحويل على واتساب عشان نأكد أسرع.
+          </p>
+        ) : (
+          <p style={{ textAlign: "center" }}>طلبك اتبعت وهيتجهز دلوقتي 🎉 تقدر تتابعه من صفحة أوردراتك.</p>
+        )}
+        {done.pointsUsed > 0 && (
+          <p style={{ textAlign: "center" }}>⭐ اتخصم {done.pointsUsed} نقطة لتفعيل الخصم.</p>
+        )}
+        <div className="signUp" style={{ display: "flex", flexDirection: "column", gap: "10px", alignItems: "center" }}>
+          <a href={done.whatsappUrl} target="_blank" rel="noopener noreferrer">
+            <button type="button">
+              {underReview ? "📱 ابعت إثبات التحويل على واتساب" : "📱 تواصل معنا على واتساب"}
+            </button>
+          </a>
+          <button type="button" onClick={() => navigate("/orders")}>تابع أوردراتك</button>
+          <button type="button" onClick={() => navigate("/")}>الرئيسية</button>
+        </div>
+      </div>
+    );
+  }
 
   if (isEmpty) {
     return (
@@ -284,19 +404,19 @@ export default function Cart() {
           </div>
           {cart.deliveryItems.map((item, idx) => {
             const beforeTotal = (item.price * item.qty).toFixed(2);
-            const afterTotal = (item.discounted_price * item.qty).toFixed(2);
-            const hasDiscount = Number(item.price) > Number(item.discounted_price);
+            const afterTotal = (unitPrice(item) * item.qty).toFixed(2);
+            const showStrike = discountActive && Number(item.price) > Number(item.discounted_price);
 
             return (
               <div className="cart-line" key={idx}>
                 <span>{item.name} × {item.qty}</span>
                 <span style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                  {hasDiscount && (
+                  {showStrike && (
                     <span style={{ color: "#999", textDecoration: "line-through", fontSize: "0.9em" }}>
                       {beforeTotal} ج.م
                     </span>
                   )}
-                  <span style={{ color: "#28a745", fontWeight: "bold" }}>
+                  <span style={{ color: showStrike ? "#28a745" : "inherit", fontWeight: "bold" }}>
                     {afterTotal} ج.م
                   </span>
                 </span>
@@ -334,6 +454,27 @@ export default function Cart() {
       </div>
 
       <form onSubmit={handleSubmit} className="cart-checkout-form">
+        {pointsRequired > 0 && (
+          <div style={{ background: "#fff8e1", border: "1px solid #ffe082", borderRadius: "8px", padding: "10px 14px", marginBottom: "12px" }}>
+            <label style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+              <input
+                type="checkbox"
+                checked={usingPoints}
+                disabled={!canUsePoints}
+                onChange={(e) => setUsePoints(e.target.checked)}
+              />
+              <span>
+                ⭐ استخدم {pointsRequired} نقطة لتفعيل خصم المحل
+                {potentialSaving > 0 ? ` (وفّر ${potentialSaving} ج.م)` : ""}
+              </span>
+            </label>
+            <small style={{ display: "block", marginTop: "6px", color: "#7a5c00" }}>
+              رصيدك: {balance} نقطة
+              {!canUsePoints ? " — مش كفاية لتفعيل الخصم" : ""} · <Link to="/profile">اشحن نقاط</Link>
+            </small>
+          </div>
+        )}
+
         <h3>بيانات التوصيل</h3>
 
         <input type="text" name="name" placeholder="الاسم" value={form.name} onChange={handleChange} required />
@@ -352,7 +493,7 @@ export default function Cart() {
               <div key={addr.id} className={selectedAddressId === addr.id ? "saved-address-item selected" : "saved-address-item"} onClick={() => setSelectedAddressId(addr.id)}>
                 <div>
                   <strong>{addr.label}</strong>
-                  <p>{addr.address}</p>
+                  <p>{addr.address}{typeof addr.lat === "number" ? " 📍" : ""}</p>
                 </div>
                 <button type="button" className="delete-address-btn" onClick={(e) => { e.stopPropagation(); handleDeleteAddress(addr.id); }}>✕</button>
               </div>
@@ -365,6 +506,25 @@ export default function Cart() {
             <input type="text" name="addressLabel" placeholder="اسم الشارع ( رقم المنزل ، علامة مميزة)" value={form.addressLabel} onChange={handleChange} />
             <input type="text" name="address" placeholder="العنوان بالتفصيل" value={form.address} onChange={handleChange} required />
           </>
+        )}
+
+        {hasDelivery && (
+          <div style={{ margin: "8px 0" }}>
+            <button type="button" onClick={handleLocate} disabled={locating}>
+              {locating ? "جارٍ تحديد موقعك..." : coords ? "📍 تحديث موقعي الحالي" : "📍 استخدم موقعي الحالي"}
+            </button>
+            {coords && (
+              <p style={{ color: "#28a745", margin: "6px 0 0" }}>
+                ✅ تم تحديد موقعك{coords.accuracy ? ` (دقة ±${coords.accuracy} متر)` : ""} — الدليفري هيوصلك بالظبط
+              </p>
+            )}
+            {!coords && !locationError && (
+              <p style={{ color: "#777", margin: "6px 0 0", fontSize: "0.9em" }}>
+                اختياري، بس بيخلي الدليفري يوصلك أسرع.
+              </p>
+            )}
+            {locationError && <p style={{ color: "red", margin: "6px 0 0" }}>{locationError}</p>}
+          </div>
         )}
 
         <div className="payment-method-section">
@@ -389,16 +549,17 @@ export default function Cart() {
                   {copied ? "✅ اتنسخ" : "نسخ"}
                 </button>
               </div>
+              <input type="tel" name="senderPhone" placeholder="رقم المحفظة اللي حوّلت منها" value={form.senderPhone} onChange={handleChange} required />
               <input type="text" name="transactionRef" placeholder="آخر 6 أرقام من عملية التحويل" value={form.transactionRef} onChange={handleChange} maxLength={6} required />
-              <p className="screenshot-warning">⚠️ لازم تبعت <strong>سكرين شوت</strong> إثبات التحويل على الواتساب فور إرسال الطلب، وإلا الطلب مش هيتأكد</p>
+              <p className="screenshot-warning">⚠️ طلبك هيتراجع الأول، وهيتبعت للمطعم أول ما نتأكد من التحويل. ابعت <strong>سكرين شوت</strong> الإثبات على الواتساب عشان نأكد أسرع.</p>
             </div>
           )}
         </div>
 
-        <button type="submit" disabled={sending}>تأكيد الطلب</button>
-      </form>
+        {errorMsg && <p style={{ color: "red", textAlign: "center" }}>{errorMsg}</p>}
 
-      {message && <p style={{ textAlign: "center" }}>{message}</p>}
+        <button type="submit" disabled={sending}>{sending ? "جارٍ إرسال الطلب..." : "تأكيد الطلب"}</button>
+      </form>
     </div>
   );
 }
