@@ -1,5 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { CART_SCRIPT_URL } from "../data/data.js";
+import { uploadImage, assetUrl } from "../data/imageUtil.js";
 import "./Admin.css";
 
 const STATUS_OPTIONS = ["pending", "accepted_by_restaurant", "preparing", "out_for_delivery", "delivered", "cancelled"];
@@ -26,13 +27,716 @@ function buildWhatsAppLink(phone, message) {
   return `https://wa.me/${number}?text=${encodeURIComponent(message)}`;
 }
 
+/* ================= أقسام الإدارة الجديدة (مراجعات / منيو / نقاط / لايف) ================= */
+
+async function api(body) {
+  const res = await fetch(CART_SCRIPT_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify(body),
+  });
+  return res.json();
+}
+
+const fmtDate = (v) => {
+  const d = new Date(v);
+  return isNaN(d) ? "" : d.toLocaleString("ar-EG");
+};
+
+// صوت تنبيه قصير (من غير ملفات خارجية)
+function beep() {
+  try {
+    const Ctx = window.AudioContext || window.webkitAudioContext;
+    const ctx = new Ctx();
+    const o = ctx.createOscillator();
+    const g = ctx.createGain();
+    o.connect(g);
+    g.connect(ctx.destination);
+    o.frequency.value = 880;
+    g.gain.value = 0.15;
+    o.start();
+    setTimeout(() => {
+      o.stop();
+      ctx.close();
+    }, 350);
+  } catch {
+    /* المتصفح مانع الصوت */
+  }
+}
+
+// بيراقب عدّاد المراجعات كل 20 ثانية وبينبهك لما يزيد (صوت + إشعار متصفح + عنوان الصفحة)
+function useAdminPending(password) {
+  const [pending, setPending] = useState(null);
+  const last = useRef(null);
+  useEffect(() => {
+    if (!password) return undefined;
+    let stopped = false;
+    const tick = async () => {
+      try {
+        const r = await api({ action: "pts_adminPending", password });
+        if (stopped || !r.success) return;
+        setPending(r);
+        if (last.current !== null && r.total > last.current) {
+          beep();
+          try {
+            if ("Notification" in window && Notification.permission === "granted") {
+              new Notification("VE Voucher", { body: `فيه ${r.total} حاجة محتاجة مراجعة` });
+            }
+          } catch {
+            /* ignore */
+          }
+        }
+        last.current = r.total;
+        document.title = r.total > 0 ? `(${r.total}) إدارة VE` : "إدارة VE";
+      } catch {
+        /* هنحاول تاني */
+      }
+    };
+    tick();
+    const id = setInterval(tick, 20000);
+    return () => {
+      stopped = true;
+      clearInterval(id);
+    };
+  }, [password]);
+  return pending;
+}
+
+function Msg({ error, notice }) {
+  return (
+    <>
+      {error && <p className="adx-error">{error}</p>}
+      {notice && <p className="adx-notice">{notice}</p>}
+    </>
+  );
+}
+
+/* ===================== مراجعات ===================== */
+function Reviews({ password, onChanged }) {
+  const [data, setData] = useState({ orders: [], purchases: [], refunds: [], requests: [] });
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+  const [discounts, setDiscounts] = useState({});
+
+  const load = useCallback(async () => {
+    try {
+      const [o, p, r, m] = await Promise.all([
+        api({ action: "pts_adminGetPaymentOrders", password }),
+        api({ action: "pts_adminGetPurchases", password }),
+        api({ action: "pts_adminGetRefunds", password }),
+        api({ action: "mm_adminGetRequests", password }),
+      ]);
+      setData({ orders: o.orders || [], purchases: p.purchases || [], refunds: r.refunds || [], requests: m.requests || [] });
+      const bad = [o, p, r, m].find((x) => !x.success);
+      setError(bad ? bad.error : "");
+    } catch {
+      setError("مشكلة في الاتصال");
+    }
+  }, [password]);
+
+  useEffect(() => {
+    load();
+    const id = setInterval(load, 20000);
+    return () => clearInterval(id);
+  }, [load]);
+
+  const review = async (body, okText) => {
+    setError("");
+    setNotice("");
+    const r = await api({ password, ...body });
+    if (!r.success) setError(r.error || "فشل");
+    else setNotice(okText);
+    await load();
+    onChanged && onChanged();
+  };
+
+  const ask = (msg) => window.prompt(msg, "");
+
+  const rejectReason = () => {
+    const reason = ask("سبب الرفض:");
+    return reason === null ? null : reason;
+  };
+
+  const none = !data.orders.length && !data.purchases.length && !data.refunds.length && !data.requests.length;
+
+  return (
+    <>
+      <Msg error={error} notice={notice} />
+      {none && <p className="adx-muted">مفيش حاجة محتاجة مراجعة دلوقتي ✅</p>}
+
+      {data.orders.length > 0 && <h3>دفع أوردرات (فودافون كاش) — {data.orders.length}</h3>}
+      {data.orders.map((o) => (
+        <div className="adx-card" key={o.orderId}>
+          <div className="adx-row">
+            <strong>{o.storeName}</strong>
+            <b>{o.total} ج.م</b>
+          </div>
+          <div className="adx-muted">
+            {o.customerName} • {o.phone} • {fmtDate(o.timestamp)}
+          </div>
+          <div>{o.items}</div>
+          <div className="adx-box">
+            حوّل من: <b>{o.senderPhone || "—"}</b> {o.reference && <>• مرجع: {o.reference}</>}
+            {o.pointsUsed > 0 && <> • نقاط مستخدمة: {o.pointsUsed}</>}
+          </div>
+          <div className="adx-actions">
+            <button onClick={() => review({ action: "pts_adminReviewOrderPayment", orderId: o.orderId, approve: true }, "اتقبل وراح للمطعم")}>تأكيد الدفع</button>
+            <button
+              className="adx-danger"
+              onClick={() => {
+                const reason = rejectReason();
+                if (reason !== null) review({ action: "pts_adminReviewOrderPayment", orderId: o.orderId, approve: false, reason }, "اترفض وراجعت الكمية والنقاط");
+              }}
+            >
+              رفض
+            </button>
+          </div>
+        </div>
+      ))}
+
+      {data.purchases.length > 0 && <h3>شراء نقاط — {data.purchases.length}</h3>}
+      {data.purchases.map((p) => (
+        <div className="adx-card" key={p.requestId}>
+          <div className="adx-row">
+            <strong>
+              {p.points} نقطة • {p.price} ج.م
+            </strong>
+            <span className="adx-muted">{fmtDate(p.createdAt)}</span>
+          </div>
+          <div className="adx-muted">
+            {p.name} • {p.phone}
+          </div>
+          <div className="adx-box">
+            حوّل من: <b>{p.senderPhone}</b> {p.reference && <>• مرجع: {p.reference}</>}
+          </div>
+          <div className="adx-actions">
+            <button onClick={() => review({ action: "pts_adminReviewPurchase", requestId: p.requestId, approve: true }, "النقاط اتضافت للعميل")}>تأكيد وإضافة النقاط</button>
+            <button
+              className="adx-danger"
+              onClick={() => {
+                const reason = rejectReason();
+                if (reason !== null) review({ action: "pts_adminReviewPurchase", requestId: p.requestId, approve: false, reason }, "اترفض");
+              }}
+            >
+              رفض
+            </button>
+          </div>
+        </div>
+      ))}
+
+      {data.refunds.length > 0 && <h3>استرداد نقاط — {data.refunds.length}</h3>}
+      {data.refunds.map((r) => (
+        <div className="adx-card" key={r.requestId}>
+          <div className="adx-row">
+            <strong>
+              {r.points} نقطة • أوردر {r.orderId}
+            </strong>
+            <span className="adx-muted">{fmtDate(r.createdAt)}</span>
+          </div>
+          <div className="adx-muted">{r.phone}</div>
+          {r.reason && <div>السبب: {r.reason}</div>}
+          <div className="adx-actions">
+            <button onClick={() => review({ action: "pts_adminReviewRefund", requestId: r.requestId, approve: true }, "النقاط اترجعت للعميل")}>موافقة وإرجاع النقاط</button>
+            <button
+              className="adx-danger"
+              onClick={() => {
+                const reason = rejectReason();
+                if (reason !== null) review({ action: "pts_adminReviewRefund", requestId: r.requestId, approve: false, reason }, "اترفض");
+              }}
+            >
+              رفض
+            </button>
+          </div>
+        </div>
+      ))}
+
+      {data.requests.length > 0 && <h3>تعديلات المنيو — {data.requests.length}</h3>}
+      {data.requests.map((q) => {
+        const nd = q.newData || {};
+        const od = q.oldData || {};
+        const name = nd.name || od.name || "";
+        return (
+          <div className="adx-card" key={q.requestId}>
+            <div className="adx-row">
+              <strong>
+                {{ add: "إضافة", edit: "تعديل", delete: "حذف" }[q.type] || q.type} {name}
+              </strong>
+              <span className="adx-muted">{q.restaurantName}</span>
+            </div>
+            {q.type !== "delete" && (
+              <div className="adx-box">
+                {Object.keys(nd).map((k) => (
+                  <div key={k}>
+                    {k}: <b>{String(nd[k])}</b>
+                    {od[k] !== undefined && String(od[k]) !== String(nd[k]) && <span className="adx-muted"> (كان {String(od[k])})</span>}
+                  </div>
+                ))}
+                {nd.imageUrl && <img className="adx-img" src={String(nd.imageUrl).split(",")[0]} alt="" />}
+              </div>
+            )}
+            {q.type !== "delete" && (
+              <input
+                className="adx-input"
+                type="number"
+                min="0"
+                max="100"
+                placeholder="نسبة الخصم % (اختياري)"
+                value={discounts[q.requestId] || ""}
+                onChange={(e) => setDiscounts({ ...discounts, [q.requestId]: e.target.value })}
+              />
+            )}
+            <div className="adx-actions">
+              <button
+                onClick={() =>
+                  review(
+                    { action: "mm_adminReview", requestId: q.requestId, approve: true, discountPercent: discounts[q.requestId] || undefined },
+                    "اتقبل وظهر للعملاء"
+                  )
+                }
+              >
+                موافقة
+              </button>
+              <button
+                className="adx-danger"
+                onClick={() => {
+                  const reason = rejectReason();
+                  if (reason) review({ action: "mm_adminReview", requestId: q.requestId, approve: false, reason }, "اترفض");
+                  else if (reason === "") window.alert("اكتب سبب الرفض");
+                }}
+              >
+                رفض
+              </button>
+            </div>
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+/* ===================== منيو وخصومات ===================== */
+function MenuDiscounts({ password }) {
+  const [partners, setPartners] = useState([]);
+  const [storeId, setStoreId] = useState("");
+  const [items, setItems] = useState([]);
+  const [edits, setEdits] = useState({});
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  useEffect(() => {
+    api({ action: "mm_adminGetPartners", password }).then((r) => (r.success ? setPartners(r.partners || []) : setError(r.error || "")));
+  }, [password]);
+
+  const loadItems = useCallback(
+    async (id) => {
+      setStoreId(id);
+      setItems([]);
+      setEdits({});
+      if (!id) return;
+      const r = await api({ action: "mm_adminGetStoreItems", password, storeId: id });
+      if (r.success) setItems(r.items || []);
+      else setError(r.error || "");
+    },
+    [password]
+  );
+
+  const save = async () => {
+    const updates = Object.keys(edits).map((itemId) => ({ itemId, discountPercent: Number(edits[itemId]) }));
+    if (!updates.length) return;
+    setError("");
+    const r = await api({ action: "mm_adminSetDiscount", password, storeId, updates });
+    if (!r.success) setError(r.error || "فشل");
+    else {
+      setNotice("الخصومات اتحفظت");
+      await loadItems(storeId);
+    }
+  };
+
+  return (
+    <>
+      <Msg error={error} notice={notice} />
+      <select className="adx-input" value={storeId} onChange={(e) => loadItems(e.target.value)}>
+        <option value="">اختار المحل</option>
+        {partners.map((p) => (
+          <option key={p.restaurantId} value={p.storeId}>
+            {p.name}
+          </option>
+        ))}
+      </select>
+      {items.map((it) => {
+        const val = edits[it.itemId] !== undefined ? edits[it.itemId] : it.discountPercent || 0;
+        return (
+          <div className="adx-card" key={it.itemId}>
+            <div className="adx-row">
+              <strong>{it.name}</strong>
+              <span>{it.price} ج.م</span>
+            </div>
+            <div className="adx-row">
+              <span className="adx-muted">
+                بعد الخصم: {Math.round(it.price * (1 - Number(val) / 100) * 100) / 100} ج.م {it.available ? "" : "• غير متاح"}
+              </span>
+              <label>
+                خصم %{" "}
+                <input
+                  className="adx-num"
+                  type="number"
+                  min="0"
+                  max="100"
+                  value={val}
+                  onChange={(e) => setEdits({ ...edits, [it.itemId]: e.target.value })}
+                />
+              </label>
+            </div>
+          </div>
+        );
+      })}
+      {Object.keys(edits).length > 0 && (
+        <button className="adx-sticky" onClick={save}>
+          حفظ {Object.keys(edits).length} تعديل
+        </button>
+      )}
+    </>
+  );
+}
+
+/* ===================== نقاط وباقات وتوصيل ===================== */
+function PointsAndDelivery({ password }) {
+  const [packages, setPackages] = useState([]);
+  const [stores, setStores] = useState([]);
+  const [partners, setPartners] = useState([]);
+  const [storeEdits, setStoreEdits] = useState({});
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  const load = useCallback(async () => {
+    const [pk, st, pa] = await Promise.all([
+      api({ action: "pts_adminGetPackages", password }),
+      api({ action: "pts_adminGetStores", password }),
+      api({ action: "mm_adminGetPartners", password }),
+    ]);
+    if (pk.success) setPackages(pk.packages || []);
+    if (st.success) setStores(st.stores || []);
+    if (pa.success) setPartners(pa.partners || []);
+  }, [password]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const run = async (body, okText) => {
+    setError("");
+    setNotice("");
+    const r = await api({ password, ...body });
+    if (!r.success) setError(r.error || "فشل");
+    else setNotice(okText);
+    await load();
+  };
+
+  const editPackage = (p) => {
+    const points = window.prompt("عدد النقاط:", p ? p.points : "");
+    if (points === null) return;
+    const price = window.prompt("السعر بالجنيه:", p ? p.price : "");
+    if (price === null) return;
+    run({ action: "pts_adminSavePackage", packageId: p ? p.packageId : undefined, points: Number(points), price: Number(price), active: p ? p.active : true }, "الباقة اتحفظت");
+  };
+
+  const saveStorePoints = () => {
+    const updates = Object.keys(storeEdits).map((storeId) => ({ storeId, pointsRequired: Number(storeEdits[storeId]) }));
+    run({ action: "pts_adminSetStorePoints", updates }, "نقاط المحلات اتحفظت").then(() => setStoreEdits({}));
+  };
+
+  return (
+    <>
+      <Msg error={error} notice={notice} />
+      <h3>باقات النقاط</h3>
+      {packages.map((p) => (
+        <div className="adx-card adx-row" key={p.packageId}>
+          <span>
+            {p.points} نقطة = {p.price} ج.م {p.active ? "" : "(موقوفة)"}
+          </span>
+          <span className="adx-actions">
+            <button onClick={() => editPackage(p)}>تعديل</button>
+            <button className="adx-gray" onClick={() => run({ action: "pts_adminSavePackage", packageId: p.packageId, points: p.points, price: p.price, active: !p.active }, "اتغيرت الحالة")}>
+              {p.active ? "إيقاف" : "تفعيل"}
+            </button>
+            <button
+              className="adx-danger"
+              onClick={() => window.confirm("حذف الباقة؟") && run({ action: "pts_adminDeletePackage", packageId: p.packageId }, "اتحذفت")}
+            >
+              حذف
+            </button>
+          </span>
+        </div>
+      ))}
+      <button onClick={() => editPackage(null)}>+ باقة جديدة</button>
+
+      <h3>النقاط المطلوبة لكل محل</h3>
+      <p className="adx-muted">0 = الخصم شغال من غير نقاط.</p>
+      {stores.map((s) => (
+        <div className="adx-card adx-row" key={s.storeId}>
+          <span>{s.name}</span>
+          <input
+            className="adx-num"
+            type="number"
+            min="0"
+            value={storeEdits[s.storeId] !== undefined ? storeEdits[s.storeId] : s.pointsRequired}
+            onChange={(e) => setStoreEdits({ ...storeEdits, [s.storeId]: e.target.value })}
+          />
+        </div>
+      ))}
+      {Object.keys(storeEdits).length > 0 && <button onClick={saveStorePoints}>حفظ نقاط المحلات</button>}
+
+      <h3>التوصيل (مطاعم وكافيهات بس)</h3>
+      {partners.map((p) => (
+        <label className="adx-card adx-row" key={p.restaurantId}>
+          <span>{p.name}</span>
+          <input
+            type="checkbox"
+            checked={!!p.deliveryEnabled}
+            onChange={(e) => {
+              const enabled = e.target.checked;
+              setPartners((prev) => prev.map((x) => (x.restaurantId === p.restaurantId ? { ...x, deliveryEnabled: enabled } : x)));
+              run({ action: "mm_adminSetDelivery", updates: [{ storeId: p.storeId, enabled }] }, "اتحدّث");
+            }}
+          />
+        </label>
+      ))}
+    </>
+  );
+}
+
+/* ===================== الدليفري لايف ===================== */
+const STATE_TEXT = { online: "🟢 أونلاين", stale: "🟡 متأخر", offline: "🔴 مقطوع" };
+
+function LiveDrivers({ password }) {
+  const [data, setData] = useState(null);
+  const [error, setError] = useState("");
+  const [sel, setSel] = useState(null);
+
+  useEffect(() => {
+    let stopped = false;
+    const tick = async () => {
+      try {
+        const r = await api({ action: "tr_adminLive", password });
+        if (stopped) return;
+        if (r.success) {
+          setData(r);
+          setError("");
+        } else setError(r.error || "فشل");
+      } catch {
+        setError("مشكلة في الاتصال");
+      }
+    };
+    tick();
+    const id = setInterval(tick, 10000);
+    return () => {
+      stopped = true;
+      clearInterval(id);
+    };
+  }, [password]);
+
+  const drivers = data ? data.drivers : [];
+  const chosen = drivers.find((d) => d.phone === sel) || drivers.find((d) => d.lat !== null);
+  let map = null;
+  if (chosen && chosen.lat !== null) {
+    const d = 0.01;
+    map = `https://www.openstreetmap.org/export/embed.html?bbox=${chosen.lng - d},${chosen.lat - d},${chosen.lng + d},${chosen.lat + d}&layer=mapnik&marker=${chosen.lat},${chosen.lng}`;
+  }
+
+  return (
+    <>
+      {error && <p className="adx-error">{error}</p>}
+      {data && (
+        <p className="adx-muted">
+          أونلاين {data.counts.online} • متأخر {data.counts.stale} • مقطوع {data.counts.offline} (بيتحدّث كل 10 ثواني)
+        </p>
+      )}
+      {map && <iframe className="adx-map" title="الدليفري" src={map} />}
+      {drivers.map((d) => (
+        <div className={`adx-card ${chosen && chosen.phone === d.phone ? "adx-sel" : ""}`} key={d.phone} onClick={() => setSel(d.phone)}>
+          <div className="adx-row">
+            <strong>{d.name}</strong>
+            <span>{STATE_TEXT[d.state] || d.state}</span>
+          </div>
+          <div className="adx-muted">
+            {d.phone} • {d.vehicle} • {d.ageSec === null ? "مفيش مكان" : `من ${d.ageSec} ثانية`}
+            {d.battery !== null && d.battery !== undefined && d.battery !== "" && ` • بطارية ${d.battery}%`}
+            {d.appState && ` • ${d.appState}`}
+          </div>
+          {d.orderId ? <div className="adx-box">معاه أوردر {d.orderId} ({d.orderStatus})</div> : <div className="adx-muted">فاضي</div>}
+          {d.mapsUrl && (
+            <a href={d.mapsUrl} target="_blank" rel="noreferrer" onClick={(e) => e.stopPropagation()}>
+              افتح على الخريطة
+            </a>
+          )}
+        </div>
+      ))}
+      {data && drivers.length === 0 && <p className="adx-muted">مفيش دليفري مفعّل.</p>}
+    </>
+  );
+}
+
+/* ===================== الواجهة الرئيسية ===================== */
+
+
+// ===== إضافة مطعم/محل مباشرة + التحكم في ظهوره في الموقع =====
+function AddPartnerForm({ password, onDone, onCreated }) {
+  const empty = { restaurantName: "", ownerName: "", phone: "", category: "مطاعم", username: "", restaurantPassword: "", description: "", address: "", logoUrl: "", storeKey: "" };
+  const [open, setOpen] = useState(false);
+  const [f, setF] = useState(empty);
+  const [busy, setBusy] = useState(false);
+  const [logoBusy, setLogoBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const pickLogo = async (e) => {
+    const file = e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    setLogoBusy(true);
+    setErr("");
+    try {
+      const url = await uploadImage(file, { password }, "logo");
+      setF((p) => ({ ...p, logoUrl: url }));
+    } catch (er) {
+      setErr(er.message || "فشل رفع اللوجو");
+    } finally {
+      setLogoBusy(false);
+    }
+  };
+  const set = (k) => (e) => setF((p) => ({ ...p, [k]: e.target.value }));
+  const genPass = () => setF((p) => ({ ...p, restaurantPassword: Math.random().toString(36).slice(2, 6) + Math.floor(1000 + Math.random() * 9000) }));
+
+  const submit = async () => {
+    setErr("");
+    setBusy(true);
+    try {
+      const r = await api({ action: "sd_adminAddPartner", password, ...f });
+      if (r.success) {
+        setF(empty);
+        setOpen(false);
+        onCreated(r);
+        onDone();
+      } else setErr(r.error || "حصل خطأ");
+    } catch {
+      setErr("مشكلة في الاتصال");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!open) return <div className="adx"><button style={{ width: "100%" }} onClick={() => setOpen(true)}>➕ إضافة مطعم / محل جديد</button></div>;
+  return (
+    <div className="adx adx-box adx-addform">
+      <h4>➕ إضافة محل جديد</h4>
+      <input placeholder="اسم المحل *" value={f.restaurantName} onChange={set("restaurantName")} />
+      <input placeholder="اسم صاحب المحل *" value={f.ownerName} onChange={set("ownerName")} />
+      <input placeholder="رقم الموبايل (واتساب) *" inputMode="tel" value={f.phone} onChange={set("phone")} />
+      <select value={f.category} onChange={set("category")}>
+        {["مطاعم", "كافيهات", "ملابس رجالي", "ملابس حريمي", "ملابس أطفال", "أحذية", "محلات كلاسيك", "إكسسوارات وعطور", "ميكب", "نظارات", "جيم", "أدوات رياضية", "سوبر ماركت", "أكاديمية كورسات"].map((c) => (
+          <option key={c} value={c}>{c}</option>
+        ))}
+      </select>
+      <input placeholder="اليوزر نيم * (إنجليزي بدون مسافات)" value={f.username} onChange={set("username")} />
+      <div className="adx-inline">
+        <input placeholder="الباسورد * (6 حروف على الأقل)" value={f.restaurantPassword} onChange={set("restaurantPassword")} />
+        <button type="button" className="adx-small" onClick={genPass}>🎲 توليد</button>
+      </div>
+      <input placeholder="وصف قصير (اختياري)" value={f.description} onChange={set("description")} />
+      <input placeholder="العنوان (اختياري)" value={f.address} onChange={set("address")} />
+      <label className="adx-upload">
+        🖼️ {logoBusy ? "جارٍ رفع اللوجو..." : f.logoUrl ? "تغيير اللوجو" : "رفع لوجو (اختياري)"}
+        <input type="file" accept="image/*" hidden disabled={logoBusy} onChange={pickLogo} />
+      </label>
+      {f.logoUrl && <img className="adx-logo-prev" src={assetUrl(f.logoUrl)} alt="" />}
+      <input placeholder="مفتاح المنيو (اختياري - لو سبته هيتعمل تلقائي)" value={f.storeKey} onChange={set("storeKey")} />
+      <small className="adx-muted">التوصيل بيتفعّل تلقائي للمطاعم والكافيهات بس. المحل هيظهر في الموقع فوراً.</small>
+      {err && <p className="adx-error">{err}</p>}
+      <div className="adx-inline">
+        <button className="" disabled={busy || logoBusy} onClick={submit}>{busy ? "جارٍ الحفظ..." : "حفظ وإنشاء الحساب"}</button>
+        <button className="adx-small adx-gray" disabled={busy} onClick={() => setOpen(false)}>إلغاء</button>
+      </div>
+    </div>
+  );
+}
+
+function PartnerControls({ password, acc, onDone }) {
+  const [edit, setEdit] = useState(false);
+  const [f, setF] = useState({ description: acc.description || "", address: acc.address || "" });
+  const [listed, setListed] = useState(!!acc.listed);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+
+  const changeLogo = async (e) => {
+    const file = e.target.files[0];
+    e.target.value = "";
+    if (!file) return;
+    setBusy(true);
+    setErr("");
+    try {
+      await uploadImage(file, { password, restaurantId: acc.restaurantId }, "logo");
+      onDone();
+    } catch (er) {
+      setErr(er.message || "فشل رفع اللوجو");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const update = async (patch) => {
+    setBusy(true);
+    setErr("");
+    try {
+      const r = await api({ action: "sd_adminUpdateAccount", password, restaurantId: acc.restaurantId, ...patch });
+      if (r.success) {
+        setEdit(false);
+        onDone();
+      } else {
+        setErr(r.error || "حصل خطأ");
+        setListed(!!acc.listed);
+      }
+    } catch {
+      setErr("مشكلة في الاتصال");
+      setListed(!!acc.listed);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="adx adx-controls">
+      <label className="adx-check">
+        <input type="checkbox" style={{ width: 20, height: 20 }} checked={listed} disabled={busy} onChange={(e) => { setListed(e.target.checked); update({ listed: e.target.checked }); }} />
+        ظاهر في الموقع للعملاء
+      </label>
+      <div className="adx-inline">
+        <button className="adx-small" disabled={busy} onClick={() => update({ status: acc.status === "active" ? "suspended" : "active" })}>
+          {acc.status === "active" ? "⏸ إيقاف الحساب" : "▶️ تفعيل الحساب"}
+        </button>
+        <button className="adx-small adx-gray" onClick={() => setEdit((v) => !v)}>✏️ تعديل البيانات</button>
+      </div>
+      {edit && (
+        <div className="adx-addform">
+          <input placeholder="وصف" value={f.description} onChange={(e) => setF({ ...f, description: e.target.value })} />
+          <input placeholder="العنوان" value={f.address} onChange={(e) => setF({ ...f, address: e.target.value })} />
+          {acc.logoUrl && <img className="adx-logo-prev" src={assetUrl(acc.logoUrl)} alt="" />}
+          <label className="adx-upload">
+            🖼️ {busy ? "جارٍ الرفع..." : acc.logoUrl ? "تغيير اللوجو" : "رفع لوجو"}
+            <input type="file" accept="image/*" hidden disabled={busy} onChange={changeLogo} />
+          </label>
+          <button className="adx-small" disabled={busy} onClick={() => update({ description: f.description, address: f.address })}>حفظ</button>
+        </div>
+      )}
+      {err && <p className="adx-error">{err}</p>}
+    </div>
+  );
+}
+
 export default function Admin() {
   const [password, setPassword] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
   const [loginError, setLoginError] = useState("");
   const [loginLoading, setLoginLoading] = useState(false);
 
-  const [tab, setTab] = useState("orders");
+  const [tab, setTab] = useState("reviews");
   const [orders, setOrders] = useState([]);
   const [users, setUsers] = useState([]);
   const [offers, setOffers] = useState([]);
@@ -43,6 +747,17 @@ export default function Admin() {
   const [loading, setLoading] = useState(false);
   const [approvedInfo, setApprovedInfo] = useState(null);
   const [approvedDeliveryInfo, setApprovedDeliveryInfo] = useState(null);
+
+  // عدّاد المراجعات (بيتحدّث كل 20 ثانية وبينبهك بصوت لما يزيد)
+  const pending = useAdminPending(authenticated ? password : "");
+  useEffect(() => {
+    if (!authenticated) return;
+    try {
+      if ("Notification" in window && Notification.permission === "default") Notification.requestPermission();
+    } catch {
+      /* ignore */
+    }
+  }, [authenticated]);
 
   // بيانات اليوزر/الباسورد اللي بيكتبها الأدمن لكل طلب شراكة (keyed بـ rowIndex)
   const [approveForms, setApproveForms] = useState({});
@@ -396,6 +1111,10 @@ export default function Admin() {
       <h2>لوحة التحكم</h2>
 
       <div className="admin-tabs">
+        <button className={tab === "reviews" ? "admin-tab active" : "admin-tab"} onClick={() => setTab("reviews")}>
+          ✅ مراجعات
+          {pending && pending.total > 0 && <span className="adx-badge">{pending.total}</span>}
+        </button>
         <button className={tab === "orders" ? "admin-tab active" : "admin-tab"} onClick={() => setTab("orders")}>
           📦 الأوردرات
         </button>
@@ -411,7 +1130,30 @@ export default function Admin() {
         <button className={tab === "delivery" ? "admin-tab active" : "admin-tab"} onClick={() => setTab("delivery")}>
           🛵 الدليفري
         </button>
+        <button className={tab === "menu" ? "admin-tab active" : "admin-tab"} onClick={() => setTab("menu")}>
+          🍔 المنيو والخصم
+        </button>
+        <button className={tab === "points" ? "admin-tab active" : "admin-tab"} onClick={() => setTab("points")}>
+          ⭐ نقاط وتوصيل
+        </button>
+        <button className={tab === "live" ? "admin-tab active" : "admin-tab"} onClick={() => setTab("live")}>
+          📍 لايف
+        </button>
       </div>
+
+      {tab === "reviews" && (
+        <div className="adx">
+          {pending && (
+            <p className="adx-muted">
+              دفع أوردرات {pending.orderPayments} • شراء نقاط {pending.purchases} • استرداد {pending.refunds} • منيو {pending.menuRequests}
+            </p>
+          )}
+          <Reviews password={password} />
+        </div>
+      )}
+      {tab === "menu" && <div className="adx"><MenuDiscounts password={password} /></div>}
+      {tab === "points" && <div className="adx"><PointsAndDelivery password={password} /></div>}
+      {tab === "live" && <div className="adx"><LiveDrivers password={password} /></div>}
 
       {loading && <p style={{ textAlign: "center" }}>جارٍ التحميل...</p>}
 
@@ -549,6 +1291,11 @@ export default function Admin() {
 
       {tab === "partners" && !loading && (
         <>
+          <AddPartnerForm
+            password={password}
+            onCreated={(r) => setApprovedInfo(r)}
+            onDone={fetchRestaurantAccounts}
+          />
           {approvedInfo && (
             <div className="admin-approved-box">
               <p>✅ تم إنشاء حساب شريك "{approvedInfo.restaurantName}" بنجاح!</p>
@@ -631,7 +1378,7 @@ export default function Admin() {
             {restaurantAccounts.map((acc) => (
               <div key={acc.rowIndex} className="admin-card">
                 <div className="admin-card-header">
-                  <strong>{acc.restaurantName}</strong>
+                  <strong>{acc.logoUrl && <img className="adx-logo-mini" src={assetUrl(acc.logoUrl)} alt="" />}{acc.restaurantName}</strong>
                   <span>{acc.status === "active" ? "🟢 نشط" : "🔴 موقوف"}</span>
                 </div>
                 <div className="admin-card-body">
@@ -641,7 +1388,9 @@ export default function Admin() {
                   <span>اليوزر نيم: {acc.username}</span>
                   <span>الباسورد: {acc.password}</span>
                   <span>تاريخ الإنشاء: {new Date(acc.createdAt).toLocaleDateString("ar-EG")}</span>
+                  <span>مفتاح المنيو: {acc.storeId || acc.restaurantId} • التوصيل: {acc.deliveryEnabled === false ? "❌ مقفول" : "✅ شغال"}</span>
                 </div>
+                <PartnerControls key={acc.restaurantId + String(acc.listed) + acc.status + (acc.logoUrl || "")} password={password} acc={acc} onDone={fetchRestaurantAccounts} />
               </div>
             ))}
           </div>
