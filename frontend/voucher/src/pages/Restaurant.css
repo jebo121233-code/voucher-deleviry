@@ -32,3 +32,6 @@
 .rst-switch { display: flex; align-items: center; gap: 6px; }
 .rst-switch input { width: auto; margin: 0; }
 .rst-qty { flex: 1; min-width: 150px; margin: 0; box-sizing: border-box; }
+
+.rst-logo { text-align: center; }
+.rst-logo-img { width: 96px; height: 96px; object-fit: contain; border-radius: 12px; background: #fff; border: 1px solid #eee; margin-bottom: 8px; }
