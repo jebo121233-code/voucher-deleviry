@@ -47,7 +47,7 @@ export default function Register() {
       if (!data.success) {
         setError(data.error || "حصل خطأ");
       } else {
-        login(data.user);
+        login(data.user, data.token);
         navigate("/");
       }
     } catch (err) {
