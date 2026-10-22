@@ -1,0 +1,34 @@
+.rst-page { max-width: 640px; margin: 0 auto; padding-bottom: 90px; text-align: right; }
+.rst-head { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+.rst-head h2 { margin: 0; }
+.rst-small { width: auto; padding: 6px 10px; font-size: 0.8em; background: #eee; color: #333; }
+.rst-tabs, .rst-ranges { display: flex; gap: 6px; margin: 12px 0; }
+.rst-tabs button, .rst-ranges button { flex: 1; background: #eee; color: #333; padding: 8px 4px; }
+.rst-tabs button.on, .rst-ranges button.on { background: #28a745; color: #fff; }
+.rst-stats { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; margin-bottom: 12px; }
+.rst-stats div { border: 1px solid #ddd; border-radius: 12px; padding: 10px; text-align: center; background: #fff; }
+.rst-stats b { display: block; font-size: 1.6em; }
+.rst-stats span { color: #666; font-size: 0.85em; }
+.rst-card { border: 1px solid #ddd; border-radius: 12px; padding: 12px; margin-bottom: 10px; background: #fff; }
+.rst-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 4px 0; }
+.rst-badge { background: #fff8e1; color: #7a5c00; border-radius: 999px; padding: 2px 10px; font-size: 0.8em; white-space: nowrap; }
+.rst-muted { color: #777; font-size: 0.88em; }
+.rst-items { margin: 8px 0; padding-inline-start: 20px; }
+.rst-box { background: #f6f6f6; border-radius: 10px; padding: 8px 10px; margin: 8px 0; line-height: 1.8; }
+.rst-actions { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+.rst-actions button { flex: 1; min-width: 110px; }
+.rst-danger { background: #c62828; color: #fff; }
+.rst-gray { background: #eee; color: #333; }
+.rst-error { color: #c62828; text-align: center; }
+.rst-notice { color: #1b7f3b; text-align: center; }
+.rst-add { width: 100%; margin-bottom: 10px; }
+.rst-form { border: 2px solid #28a745; border-radius: 12px; padding: 12px; margin-bottom: 12px; background: #fff; }
+.rst-form input { width: 100%; box-sizing: border-box; margin-bottom: 8px; }
+.rst-upload { display: block; text-align: center; padding: 10px; border: 1px dashed #888; border-radius: 10px; margin-bottom: 8px; cursor: pointer; }
+.rst-preview { width: 100%; max-height: 180px; object-fit: cover; border-radius: 10px; margin-bottom: 8px; }
+.rst-item-main { display: flex; align-items: center; gap: 10px; }
+.rst-thumb { width: 52px; height: 52px; object-fit: cover; border-radius: 8px; }
+.rst-stock { display: flex; gap: 10px; align-items: center; margin-top: 8px; flex-wrap: wrap; }
+.rst-switch { display: flex; align-items: center; gap: 6px; }
+.rst-switch input { width: auto; margin: 0; }
+.rst-qty { flex: 1; min-width: 150px; margin: 0; box-sizing: border-box; }
