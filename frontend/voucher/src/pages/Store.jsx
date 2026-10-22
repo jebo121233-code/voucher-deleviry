@@ -3,6 +3,7 @@ import { useParams, useNavigate, Link } from "react-router-dom";
 import "./Store.css";
 import { shops as fakeStores, MENU_STORE_KEYS, CART_SCRIPT_URL } from "../data/data.js";
 import { useCart } from "../context/CartContext.jsx";
+import { assetUrl } from "../data/imageUtil.js";
 
 // يحسب ملخص الاختيارات: بيفرق بين مجموعة "priceMode: absolute" (زي الحجم - كل اختيار له سعر مستقل كامل)
 // ومجموعات الإضافة العادية (زي الصوصات - بتتضاف فوق السعر الأساسي)
@@ -239,10 +240,12 @@ export default function Store() {
   };
 
   useEffect(() => {
-    const found = fakeStores.find((s) => String(s.id) === String(id)) || fakeStores[0];
+    // المحلات اللي جاية من الشيت بتتضاف لنفس القايمة بعد التحميل، فبنعيد البحث لما القايمة تتغير
+    const found =
+      fakeStores.find((s) => String(s.id) === String(id)) || (/^\d+$/.test(String(id)) ? fakeStores[0] : null);
     setStore(found);
     setLoading(false);
-  }, [id]);
+  }, [id, fakeStores.length]);
 
   useEffect(() => {
     if (!store) return;
@@ -329,10 +332,11 @@ export default function Store() {
           >
             <img
               className="store-image"
-              src={`/${store.logos[0]}`}
+              src={assetUrl(store.logos[0])}
               alt={store.name}
             />
 
+            {!store.dynamic && (
             <div className="store-actions">
               <button
                 type="button"
@@ -350,6 +354,7 @@ export default function Store() {
                 احصل على خصم - {store.name}
               </button>
             </div>
+            )}
           </div>
         )}
 
@@ -380,7 +385,7 @@ export default function Store() {
             {store.images.map((img, index) => (
               <img
                 key={index}
-                src={`/${img}`}
+                src={assetUrl(img)}
                 alt={`${store.name} ${index + 1}`}
                 className="store-gallery-img"
                 onClick={() => setSelectedImageIndex(index)}
@@ -410,7 +415,7 @@ export default function Store() {
             </button>
 
             <img
-              src={`/${store.images[selectedImageIndex]}`}
+              src={assetUrl(store.images[selectedImageIndex])}
               alt={`Preview ${selectedImageIndex + 1}`}
               className="modal-image"
               onClick={(e) => e.stopPropagation()}
