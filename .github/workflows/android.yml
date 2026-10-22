@@ -1,0 +1,58 @@
+name: Build Android APK
+
+# شغّله يدوي: تاب Actions > Build Android APK > Run workflow
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  apk:
+    runs-on: ubuntu-latest
+    # مشروع الموقع جوه فولدر frontend/voucher مش في جذر الريبو
+    defaults:
+      run:
+        working-directory: frontend/voucher
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Build web app
+        run: npm run build
+
+      - name: Create Android project
+        run: |
+          if [ ! -d android ]; then npx cap add android; fi
+          node scripts/patch-android.cjs
+          npx cap sync android
+
+      - name: Build debug APK
+        working-directory: frontend/voucher/android
+        run: ./gradlew assembleDebug --no-daemon
+
+      - name: Rename APK
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk ve-voucher.apk
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: ve-voucher-apk
+          path: frontend/voucher/ve-voucher.apk
+
+      # رابط تحميل مباشر يتبعت للدليفري من صفحة Releases في الريبو
+      - uses: softprops/action-gh-release@v2
+        with:
+          tag_name: android-${{ github.run_number }}
+          name: VE Voucher Android ${{ github.run_number }}
+          files: frontend/voucher/ve-voucher.apk
