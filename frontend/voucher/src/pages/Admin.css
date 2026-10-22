@@ -211,3 +211,60 @@
 .admin-approved-box .admin-close-btn {
   background: #666;
 }
+
+/* ============ أقسام الإدارة الجديدة: مراجعات / منيو / نقاط / لايف ============ */
+
+/* الأزرار كتير فبقت بتلف على أكتر من سطر */
+.admin-tabs {
+  flex-wrap: wrap;
+}
+
+.admin-tab {
+  position: relative;
+  min-width: 30%;
+}
+
+.adx-badge {
+  position: absolute;
+  top: -6px;
+  left: -4px;
+  background: #c62828;
+  color: #fff;
+  border-radius: 999px;
+  font-size: 11px;
+  padding: 1px 6px;
+}
+
+.adx { text-align: right; color: black; }
+.adx .adx-card { border: 1px solid #ddd; border-radius: 12px; padding: 10px; margin-bottom: 10px; background: #fff; display: block; color: black; }
+.adx .adx-card.adx-row { display: flex; }
+.adx .adx-sel { border: 2px solid #28a745; }
+.adx .adx-row { display: flex; justify-content: space-between; align-items: center; gap: 8px; margin: 4px 0; flex-wrap: wrap; }
+.adx .adx-muted { color: #666; font-size: 0.88em; }
+.adx .adx-box { background: #f6f6f6; border-radius: 10px; padding: 8px 10px; margin: 6px 0; line-height: 1.7; color: black; }
+.adx .adx-actions { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 8px; }
+.adx .adx-actions button { flex: 1; min-width: 90px; }
+.adx button { padding: 9px 12px; border: none; border-radius: 8px; background: #333; color: #fff; cursor: pointer; font-family: inherit; }
+.adx button:disabled { opacity: 0.6; }
+.adx .adx-danger { background: #c62828; color: #fff; }
+.adx .adx-gray { background: #eee; color: #333; }
+.adx .adx-error { color: #c62828; text-align: center; }
+.adx .adx-notice { color: #1b7f3b; text-align: center; }
+.adx .adx-input { width: 100%; box-sizing: border-box; margin: 6px 0; padding: 9px; border-radius: 8px; border: 1px solid #ccc; color: black; background: #fff; font-family: inherit; }
+.adx .adx-num { width: 80px; padding: 6px; box-sizing: border-box; border-radius: 6px; border: 1px solid #ccc; color: black; background: #fff; }
+.adx .adx-img { width: 100%; max-height: 160px; object-fit: cover; border-radius: 8px; margin-top: 6px; }
+.adx .adx-map { width: 100%; height: 280px; border: 0; border-radius: 10px; margin-bottom: 10px; }
+.adx .adx-sticky { position: sticky; bottom: 70px; width: 100%; }
+
+/* إضافة محل + تحكم الظهور */
+.adx .adx-addform,.adx.adx-addform{display:flex;flex-direction:column;gap:8px;margin:10px 0}
+.adx .adx-addform input,.adx.adx-addform input,.adx.adx-addform select{color:black;background:#fff;width:100%;box-sizing:border-box;padding:9px;border:1px solid #ddd;border-radius:8px;font:inherit}
+.adx .adx-inline,.adx.adx-addform .adx-inline{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.adx .adx-inline input{flex:1;min-width:0}
+.adx.adx-controls{border-top:1px dashed #ddd;margin-top:10px;padding-top:10px;display:flex;flex-direction:column;gap:8px}
+.adx .adx-check{display:flex;gap:8px;align-items:center;font-weight:bold}
+.adx .adx-small{width:auto;padding:7px 12px;font-size:.85em}
+.adx .adx-inline .adx-gray{background:#eee;color:#333}
+.adx .adx-upload{display:block;text-align:center;padding:10px;border:1px dashed #888;border-radius:10px;cursor:pointer;color:#333;background:#fff}
+.adx .adx-logo-prev{width:90px;height:90px;object-fit:contain;border-radius:10px;border:1px solid #eee;background:#fff;align-self:center}
+.adx-logo-mini{width:28px;height:28px;object-fit:contain;border-radius:6px;vertical-align:middle;margin-inline-end:6px;background:#fff}
