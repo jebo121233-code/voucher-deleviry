@@ -108,6 +108,18 @@ export default function Navbar() {
           <Link to="/deals" onClick={() => setMenuOpen(false)}>Deals</Link>
         </li>
 
+        <li>
+          <Link to="/points" onClick={() => setMenuOpen(false)}>Points</Link>
+        </li>
+
+        <li>
+          <Link to="/track" onClick={() => setMenuOpen(false)}>Track Order</Link>
+        </li>
+
+        <li>
+          <Link to="/login" onClick={() => setMenuOpen(false)}>Accounts</Link>
+        </li>
+
         {/* Categories */}
         <li className="dropdown">
           <span onClick={handleCategoriesClick}>
