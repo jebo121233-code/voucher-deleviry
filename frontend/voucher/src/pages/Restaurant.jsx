@@ -5,6 +5,7 @@ import "./Restaurant.css";
 import { CART_SCRIPT_URL } from "../data/data.js";
 import { CLOUDINARY_CLOUD_NAME as CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET as UPLOAD_PRESET } from "../data/upload.js";
 import { useAuth } from "../context/AuthContext.jsx";
+import { uploadImage as driveUpload } from "../data/imageUtil.js";
 
 // لو ملّيت ملف data/upload.js، المحل يقدر يرفع الصورة من الموبايل مباشرة، وإلا بيكتب رابط الصورة
 
@@ -67,6 +68,8 @@ export default function Restaurant() {
   const [stockEdits, setStockEdits] = useState({});
   const [form, setForm] = useState(null); // null = مقفول
   const [uploading, setUploading] = useState(false);
+  const [logoUrl, setLogoUrl] = useState("");
+  const [logoBusy, setLogoBusy] = useState(false);
   const [error, setError] = useState("");
   const [notice, setNotice] = useState("");
   const [busy, setBusy] = useState("");
@@ -192,22 +195,50 @@ export default function Restaurant() {
       quantity: "",
     });
 
+  // رفع صورة المنتج: Cloudinary لو متظبط، وإلا على Google Drive عن طريق السيرفر (من غير أي إعداد)
   const uploadImage = async (file) => {
-    if (!file || !CLOUD_NAME || !UPLOAD_PRESET) return;
+    if (!file) return;
     setUploading(true);
     setError("");
     try {
-      const fd = new FormData();
-      fd.append("file", file);
-      fd.append("upload_preset", UPLOAD_PRESET);
-      const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: "POST", body: fd });
-      const data = await res.json();
-      if (data.secure_url) setForm((f) => ({ ...f, imageUrl: data.secure_url }));
-      else setError("فشل رفع الصورة");
-    } catch {
-      setError("فشل رفع الصورة");
+      if (CLOUD_NAME && UPLOAD_PRESET) {
+        const fd = new FormData();
+        fd.append("file", file);
+        fd.append("upload_preset", UPLOAD_PRESET);
+        const res = await fetch(`https://api.cloudinary.com/v1_1/${CLOUD_NAME}/image/upload`, { method: "POST", body: fd });
+        const data = await res.json();
+        if (data.secure_url) setForm((f) => ({ ...f, imageUrl: data.secure_url }));
+        else setError("فشل رفع الصورة");
+      } else {
+        const url = await driveUpload(file, { restaurantId: rid, token }, "product");
+        setForm((f) => ({ ...f, imageUrl: url }));
+      }
+    } catch (e) {
+      setError(e.message || "فشل رفع الصورة");
     } finally {
       setUploading(false);
+    }
+  };
+
+  // لوجو المحل: بيظهر للعملاء في صفحة المحلات
+  useEffect(() => {
+    if (!rid || !token) return;
+    api({ action: "sd_myProfile", restaurantId: rid, token }).then((r) => r.success && setLogoUrl(r.logoUrl || "")).catch(() => {});
+  }, [rid, token]);
+
+  const changeLogo = async (file) => {
+    if (!file) return;
+    setLogoBusy(true);
+    setError("");
+    setNotice("");
+    try {
+      const url = await driveUpload(file, { restaurantId: rid, token }, "logo");
+      setLogoUrl(url);
+      setNotice("اللوجو اتحدّث.");
+    } catch (e) {
+      setError(e.message || "فشل رفع اللوجو");
+    } finally {
+      setLogoBusy(false);
     }
   };
 
@@ -368,6 +399,13 @@ export default function Restaurant() {
 
       {tab === "menu" && (
         <>
+          <div className="rst-card rst-logo">
+            {logoUrl ? <img className="rst-logo-img" src={logoUrl} alt="لوجو المحل" /> : <div className="rst-muted">لسه مفيش لوجو للمحل</div>}
+            <label className="rst-upload">
+              🖼️ {logoBusy ? "جارٍ الرفع..." : logoUrl ? "تغيير اللوجو" : "رفع لوجو المحل"}
+              <input type="file" accept="image/*" hidden disabled={logoBusy} onChange={(e) => changeLogo(e.target.files[0])} />
+            </label>
+          </div>
           <button className="rst-add" onClick={openAdd}>
             + إضافة منتج جديد
           </button>
@@ -383,14 +421,10 @@ export default function Restaurant() {
               {form.mode === "add" && (
                 <input type="number" inputMode="numeric" min="0" placeholder="الكمية المتاحة (سيبها فاضية لو من غير حد)" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
               )}
-              {CLOUD_NAME && UPLOAD_PRESET ? (
-                <label className="rst-upload">
-                  📷 {uploading ? "جارٍ الرفع..." : "اختار صورة"}
-                  <input type="file" accept="image/*" hidden onChange={(e) => uploadImage(e.target.files[0])} />
-                </label>
-              ) : (
-                <input type="url" placeholder="رابط الصورة (https://...)" value={form.imageUrl} onChange={(e) => setForm({ ...form, imageUrl: e.target.value })} />
-              )}
+              <label className="rst-upload">
+                📷 {uploading ? "جارٍ الرفع..." : form.imageUrl ? "تغيير الصورة" : "اختار صورة"}
+                <input type="file" accept="image/*" hidden disabled={uploading} onChange={(e) => uploadImage(e.target.files[0])} />
+              </label>
               {form.imageUrl && <img className="rst-preview" src={form.imageUrl} alt="" />}
               <p className="rst-muted">الخصم بتحدده الإدارة، والتغيير بيظهر للعملاء بعد الموافقة.</p>
               <div className="rst-actions">
