@@ -5,6 +5,7 @@ import { Link } from "react-router-dom";
 import { shops as fakeStores }  from '../data/data.js';
 import { categories as fakeCategories }  from '../data/data.js';
 import { cards } from '../data/data.js';
+import { assetUrl } from '../data/imageUtil.js';
 
 export default function Home() {
   const [stores, setStores] = useState([]);
@@ -113,7 +114,7 @@ export default function Home() {
                 key={stores[index].logos[0]}
                 className="hero-bg"
                 style={{
-                  backgroundImage: `url(${stores[index].logos[0]})`,
+                  backgroundImage: `url(${assetUrl(stores[index].logos[0], "")})`,
                 }}
               />
             )}
@@ -197,7 +198,7 @@ export default function Home() {
 
         <div className="store-scroll">
           {stores.map((store) => (
-            <Link to={`/store/${store.id}`} className="store-link">
+            <Link to={`/store/${store.id}`} className="store-link" key={store.id}>
               <div className="store-card" key={store.id}>
 
                 {store.status && (
@@ -208,7 +209,7 @@ export default function Home() {
 
                 {store.logos?.[0] && (
                   <img
-                    src={`/${store.logos[0]}`}
+                    src={assetUrl(store.logos[0])}
                     alt={store.name}
                     className="store-card-img"
                   />
