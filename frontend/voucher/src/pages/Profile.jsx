@@ -1,17 +1,23 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext.jsx";
+import { useAuth, accountIdOf } from "../context/AuthContext.jsx";
 import { CART_SCRIPT_URL } from "../data/data.js";
 import "./Profile.css";
 
 export default function Profile() {
-  const { user, isLoggedIn, logout, login } = useAuth();
+  const { user, isLoggedIn, logout, login, removeAccount, refreshUser } = useAuth();
   const navigate = useNavigate();
 
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ newName: "", newPhone: "", currentPassword: "" });
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+
+  // بنحدّث النقاط من السيرفر أول ما الصفحة تفتح
+  useEffect(() => {
+    if (isLoggedIn && refreshUser) refreshUser();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isLoggedIn]);
 
   if (!isLoggedIn) {
     return (
@@ -72,7 +78,10 @@ export default function Profile() {
       if (!data.success) {
         setError(data.error || "حصل خطأ");
       } else {
-        login(data.user);
+        // لو الرقم اتغير، الحساب القديم (بالرقم القديم) بيتشال من الجهاز عشان ميبقاش فيه حسابين
+        const oldId = accountIdOf("customer", { phone: user.phone });
+        login(data.user, data.token);
+        if (accountIdOf("customer", data.user) !== oldId) removeAccount(oldId);
         setEditing(false);
       }
     } catch (err) {
@@ -135,7 +144,7 @@ export default function Profile() {
       )}
 
       <div className="profile-menu">
-        <div className="profile-menu-item" onClick={() => navigate("/profile")}>
+        <div className="profile-menu-item" onClick={() => navigate("/points")}>
           <span className="menu-icon">🎁</span>
           <span className="menu-label points-label">نقاطي</span>
           <span className="menu-value points-value">⭐ {user.points || 0}</span>
@@ -144,6 +153,16 @@ export default function Profile() {
         <div className="profile-menu-item" onClick={() => navigate("/orders")}>
           <span className="menu-icon">📦</span>
           <span className="menu-label">طلباتي</span>
+        </div>
+
+        <div className="profile-menu-item" onClick={() => navigate("/track")}>
+          <span className="menu-icon">🛵</span>
+          <span className="menu-label">تابع أوردرك</span>
+        </div>
+
+        <div className="profile-menu-item" onClick={() => navigate("/login")}>
+          <span className="menu-icon">🔁</span>
+          <span className="menu-label">تبديل الحساب / إضافة حساب</span>
         </div>
 
 <div className="profile-menu-item" onClick={() => navigate("/vouchers")}>
