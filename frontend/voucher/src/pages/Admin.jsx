@@ -730,6 +730,34 @@ function PartnerControls({ password, acc, onDone }) {
   );
 }
 
+
+// إيقاف / تفعيل حساب دليفري
+function DriverStatusButton({ password, acc, onDone }) {
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const toggle = async () => {
+    setBusy(true);
+    setErr("");
+    try {
+      const r = await api({ action: "sd_adminSetDeliveryStatus", password, deliveryId: acc.deliveryId, status: acc.status === "active" ? "suspended" : "active" });
+      if (r.success) onDone();
+      else setErr(r.error || "حصل خطأ");
+    } catch {
+      setErr("مشكلة في الاتصال");
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="adx adx-controls">
+      <button className="adx-small" disabled={busy} onClick={toggle}>
+        {acc.status === "active" ? "⏸ إيقاف الحساب" : "▶️ تفعيل الحساب"}
+      </button>
+      {err && <p className="adx-error">{err}</p>}
+    </div>
+  );
+}
+
 export default function Admin() {
   const [password, setPassword] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
@@ -746,6 +774,7 @@ export default function Admin() {
   const [deliveryAccounts, setDeliveryAccounts] = useState([]);
   const [loading, setLoading] = useState(false);
   const [approvedInfo, setApprovedInfo] = useState(null);
+  const [accountsError, setAccountsError] = useState("");
   const [approvedDeliveryInfo, setApprovedDeliveryInfo] = useState(null);
 
   // عدّاد المراجعات (بيتحدّث كل 20 ثانية وبينبهك بصوت لما يزيد)
@@ -874,9 +903,13 @@ export default function Admin() {
         body: JSON.stringify({ action: "adminGetRestaurantAccounts", password }),
       });
       const data = await res.json();
-      if (data.success) setRestaurantAccounts(data.accounts);
+      if (data.success) {
+        setRestaurantAccounts(data.accounts);
+        setAccountsError("");
+      } else setAccountsError(data.error || "مقدرناش نحمّل الحسابات");
     } catch (err) {
       console.error(err);
+      setAccountsError("مشكلة في الاتصال");
     } finally {
       setLoading(false);
     }
@@ -908,9 +941,13 @@ export default function Admin() {
         body: JSON.stringify({ action: "adminGetDeliveryAccounts", password }),
       });
       const data = await res.json();
-      if (data.success) setDeliveryAccounts(data.accounts);
+      if (data.success) {
+        setDeliveryAccounts(data.accounts);
+        setAccountsError("");
+      } else setAccountsError(data.error || "مقدرناش نحمّل الحسابات");
     } catch (err) {
       console.error(err);
+      setAccountsError("مشكلة في الاتصال");
     } finally {
       setLoading(false);
     }
@@ -1374,7 +1411,8 @@ export default function Admin() {
 
           <h3 style={{ margin: "20px 0 10px" }}>🏪 حسابات الشركاء النشطة</h3>
           <div className="admin-list">
-            {restaurantAccounts.length === 0 && <p style={{ textAlign: "center" }}>مفيش حسابات لسه</p>}
+            {accountsError && <p style={{ textAlign: "center", color: "#c62828" }}>⚠️ {accountsError}</p>}
+            {!accountsError && restaurantAccounts.length === 0 && <p style={{ textAlign: "center" }}>مفيش حسابات لسه</p>}
             {restaurantAccounts.map((acc) => (
               <div key={acc.rowIndex} className="admin-card">
                 <div className="admin-card-header">
@@ -1461,7 +1499,8 @@ export default function Admin() {
 
           <h3 style={{ margin: "20px 0 10px" }}>🛵 حسابات الدليفري النشطة</h3>
           <div className="admin-list">
-            {deliveryAccounts.length === 0 && <p style={{ textAlign: "center" }}>مفيش حسابات لسه</p>}
+            {accountsError && <p style={{ textAlign: "center", color: "#c62828" }}>⚠️ {accountsError}</p>}
+            {!accountsError && deliveryAccounts.length === 0 && <p style={{ textAlign: "center" }}>مفيش حسابات لسه</p>}
             {deliveryAccounts.map((acc) => (
               <div key={acc.rowIndex} className="admin-card">
                 <div className="admin-card-header">
@@ -1475,6 +1514,7 @@ export default function Admin() {
                   <span>المنطقة: {acc.region}</span>
                   <span>تاريخ الإنشاء: {new Date(acc.createdAt).toLocaleDateString("ar-EG")}</span>
                 </div>
+                <DriverStatusButton password={password} acc={acc} onDone={fetchDeliveryAccounts} />
               </div>
             ))}
           </div>
