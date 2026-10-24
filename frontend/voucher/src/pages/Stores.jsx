@@ -5,6 +5,7 @@ import "./Stores.css";
 import { shops as fakeStores } from '../data/data.js';
 import { categories as fakeCategories } from '../data/data.js';
 import { assetUrl } from '../data/imageUtil.js';
+import { isVisible, getStoresVersion } from '../data/dynamicStores.js';
 
 export default function Store() {
   const navigate = useNavigate();
@@ -22,10 +23,12 @@ export default function Store() {
       setStores(res.data.stores);
     } catch (err) {
       // Use fake stores if backend fails
+      // المحلات الظاهرة بس (الأدمن بيتحكم فيها من تاب "المحلات")
+      const visible = fakeStores.filter(isVisible);
       if (categoryId) {
-        setStores(fakeStores.filter((s) => s.category_ids.includes(parseInt(categoryId))));
+        setStores(visible.filter((s) => s.category_ids.includes(parseInt(categoryId))));
       } else {
-        setStores(fakeStores);
+        setStores(visible);
       }
     }
   };
@@ -49,8 +52,8 @@ export default function Store() {
 
     fetchStores(category);
     fetchCategories();
-    // fakeStores.length: لما محلات الشيت تتحمّل القايمة تتحدّث لوحدها
-  }, [location.search, fakeStores.length]);
+    // getStoresVersion(): لما محلات الشيت أو إعدادات الظهور تتحمّل القايمة تتحدّث لوحدها
+  }, [location.search, getStoresVersion()]);
 
   // When dropdown changes
   const handleCategoryChange = (e) => {
