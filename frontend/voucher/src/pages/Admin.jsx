@@ -758,6 +758,60 @@ function DriverStatusButton({ password, acc, onDone }) {
   );
 }
 
+
+// إضافة دليفري مباشرة من الأدمن
+function AddDriverForm({ password, onDone, onCreated }) {
+  const empty = { name: "", phone: "", vehicleType: "موتوسيكل", region: "طنطا", driverPassword: "" };
+  const [open, setOpen] = useState(false);
+  const [f, setF] = useState(empty);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState("");
+  const set = (k) => (e) => setF((p) => ({ ...p, [k]: e.target.value }));
+  const genPass = () => setF((p) => ({ ...p, driverPassword: Math.random().toString(36).slice(2, 7) + Math.floor(1000 + Math.random() * 9000) }));
+
+  const submit = async () => {
+    setErr("");
+    setBusy(true);
+    try {
+      const r = await api({ action: "sd_adminAddDriver", password, ...f });
+      if (r.success) {
+        setF(empty);
+        setOpen(false);
+        onCreated(r);
+        onDone();
+      } else setErr(r.error || "حصل خطأ");
+    } catch {
+      setErr("مشكلة في الاتصال");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  if (!open) return <div className="adx"><button style={{ width: "100%" }} onClick={() => setOpen(true)}>➕ إضافة دليفري جديد</button></div>;
+  return (
+    <div className="adx adx-box adx-addform">
+      <h4>➕ إضافة دليفري</h4>
+      <input placeholder="اسم الدليفري *" value={f.name} onChange={set("name")} />
+      <input placeholder="رقم الموبايل * (هو اللي بيدخل بيه)" inputMode="tel" value={f.phone} onChange={set("phone")} />
+      <select value={f.vehicleType} onChange={set("vehicleType")}>
+        {["موتوسيكل", "عجلة", "سيارة", "توك توك"].map((v) => (
+          <option key={v} value={v}>{v}</option>
+        ))}
+      </select>
+      <input placeholder="المنطقة" value={f.region} onChange={set("region")} />
+      <div className="adx-inline">
+        <input placeholder="الباسورد * (8 حروف ورقم على الأقل)" value={f.driverPassword} onChange={set("driverPassword")} />
+        <button type="button" className="adx-small" onClick={genPass}>🎲 توليد</button>
+      </div>
+      {err && <p className="adx-error">{err}</p>}
+      <div className="adx-inline">
+        <button disabled={busy} onClick={submit}>{busy ? "جارٍ الحفظ..." : "حفظ وإنشاء الحساب"}</button>
+        <button className="adx-small adx-gray" disabled={busy} onClick={() => setOpen(false)}>إلغاء</button>
+      </div>
+    </div>
+  );
+}
+
 export default function Admin() {
   const [password, setPassword] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
@@ -1437,6 +1491,11 @@ export default function Admin() {
 
       {tab === "delivery" && !loading && (
         <>
+          <AddDriverForm
+            password={password}
+            onCreated={(r) => setApprovedDeliveryInfo(r)}
+            onDone={fetchDeliveryAccounts}
+          />
           {approvedDeliveryInfo && (
             <div className="admin-approved-box">
               <p>✅ تم تفعيل حساب الدليفري "{approvedDeliveryInfo.name}" بنجاح!</p>
