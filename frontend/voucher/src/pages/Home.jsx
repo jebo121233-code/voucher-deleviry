@@ -6,6 +6,7 @@ import { shops as fakeStores }  from '../data/data.js';
 import { categories as fakeCategories }  from '../data/data.js';
 import { cards } from '../data/data.js';
 import { assetUrl } from '../data/imageUtil.js';
+import { isVisible, isOnHome, getStoresVersion } from '../data/dynamicStores.js';
 
 export default function Home() {
   const [stores, setStores] = useState([]);
@@ -35,10 +36,11 @@ export default function Home() {
       const res = await axios.get(url);
       setStores(res.data.stores);
     } catch (err) {
+      // من غير قسم: اللي الأدمن مفعّله في الرئيسية بس. مع اختيار قسم: كل المحلات الظاهرة في القسم ده.
       if (categoryId) {
-        setStores(fakeStores.filter((s) => s.category_ids.includes(parseInt(categoryId))));
+        setStores(fakeStores.filter((s) => isVisible(s) && s.category_ids.includes(parseInt(categoryId))));
       } else {
-        setStores(fakeStores);
+        setStores(fakeStores.filter(isOnHome));
       }
     }
   };
@@ -54,9 +56,10 @@ export default function Home() {
   };
 
   useEffect(() => {
-    fetchStores();
+    fetchStores(selectedCategory);
     fetchCategories();
-  }, []);
+    // getStoresVersion(): لما محلات الشيت أو إعدادات الظهور تتحمّل القايمة تتحدّث لوحدها
+  }, [getStoresVersion()]);
 
   useEffect(() => {
     if (stores.length <= 1) return;
