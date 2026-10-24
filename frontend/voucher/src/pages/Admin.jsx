@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import { CART_SCRIPT_URL } from "../data/data.js";
+import { CART_SCRIPT_URL, shops, categories } from "../data/data.js";
+import { loadDynamicStores } from "../data/dynamicStores.js";
 import { uploadImage, assetUrl } from "../data/imageUtil.js";
 import "./Admin.css";
 
@@ -759,6 +760,115 @@ function DriverStatusButton({ password, acc, onDone }) {
 }
 
 
+// ===== التحكم في ظهور المحلات للعملاء =====
+// "ظاهر": يظهر في صفحة المحلات وعند اختيار القسم. "الرئيسية": يظهر كمان في الصفحة الرئيسية.
+function StoresVisibility({ password }) {
+  const [list, setList] = useState([]);
+  const [vis, setVis] = useState({});
+  const [q, setQ] = useState("");
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState("");
+  const [notice, setNotice] = useState("");
+
+  const catName = (s) => (s.category_ids || []).map((id) => (categories.find((c) => c.id === id) || {}).name).filter(Boolean).join(" + ");
+
+  const load = useCallback(async () => {
+    setError("");
+    try {
+      await loadDynamicStores(); // يضيف المحلات اللي من الشيت للقايمة
+      setList(shops.map((s) => ({ id: String(s.id), name: String(s.name || "").trim(), cat: catName(s), dynamic: !!s.dynamic })));
+      const r = await api({ action: "sd_adminGetVisibility", password });
+      if (r.success) setVis(r.visibility || {});
+      else setError(r.error || "مقدرناش نحمّل الإعدادات");
+    } catch {
+      setError("مشكلة في الاتصال");
+    }
+  }, [password]);
+
+  useEffect(() => {
+    load();
+  }, [load]);
+
+  const get = (id) => {
+    const v = vis[id] || {};
+    return { visible: v.visible !== false, home: v.home !== false };
+  };
+
+  const apply = async (updates, okMsg) => {
+    if (!updates.length) return;
+    setBusy(true);
+    setError("");
+    setNotice("");
+    const prev = vis;
+    // نحدّث الشاشة فوراً
+    const next = { ...vis };
+    updates.forEach((u) => {
+      const cur = get(u.storeId);
+      next[u.storeId] = { visible: u.visible === undefined ? cur.visible : u.visible, home: u.home === undefined ? cur.home : u.home };
+    });
+    setVis(next);
+    try {
+      const r = await api({ action: "sd_adminSetVisibility", password, updates });
+      if (r.success) {
+        setVis(r.visibility || next);
+        setNotice(okMsg || "اتحفظ ✅");
+        loadDynamicStores();
+      } else {
+        setVis(prev);
+        setError(r.error || "فشل الحفظ");
+      }
+    } catch {
+      setVis(prev);
+      setError("مشكلة في الاتصال");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const shown = list.filter((s) => !q.trim() || (s.name + " " + s.cat).toLowerCase().includes(q.trim().toLowerCase()));
+  const pack = (items, patch) => items.map((s) => ({ storeId: s.id, name: s.name, ...patch }));
+  const visibleCount = list.filter((s) => get(s.id).visible).length;
+  const homeCount = list.filter((s) => get(s.id).visible && get(s.id).home).length;
+
+  return (
+    <div>
+      <Msg error={error} notice={notice} />
+      <p className="adx-muted">
+        ظاهر للعملاء: {visibleCount} من {list.length} • في الرئيسية: {homeCount}
+      </p>
+      <p className="adx-muted">
+        "ظاهر" = يظهر في صفحة المحلات وعند اختيار القسم. "الرئيسية" = يظهر كمان في الصفحة الرئيسية. المحل المخفي مبيظهرش خالص.
+      </p>
+      <input className="adx-input" placeholder="🔍 ابحث باسم المحل أو القسم" value={q} onChange={(e) => setQ(e.target.value)} />
+      <div className="adx-actions">
+        <button disabled={busy} onClick={() => apply(pack(shown, { visible: true }), "اتفعّلوا ✅")}>إظهار المعروض</button>
+        <button disabled={busy} className="adx-gray" onClick={() => apply(pack(shown, { visible: false }), "اتخفوا")}>إخفاء المعروض</button>
+        <button disabled={busy} className="adx-gray" onClick={() => apply(pack(shown, { home: false }), "اتشالوا من الرئيسية")}>شيل من الرئيسية</button>
+      </div>
+      {shown.map((s) => {
+        const v = get(s.id);
+        return (
+          <div className="adx-card" key={s.id}>
+            <div className="adx-row">
+              <strong>{s.name}</strong>
+              <span className="adx-muted">{s.cat}{s.dynamic ? " • من الأدمن" : ""}</span>
+            </div>
+            <label className="adx-check">
+              <input type="checkbox" style={{ width: 20, height: 20 }} checked={v.visible} disabled={busy} onChange={(e) => apply([{ storeId: s.id, name: s.name, visible: e.target.checked }])} />
+              ظاهر للعملاء
+            </label>
+            <label className="adx-check">
+              <input type="checkbox" style={{ width: 20, height: 20 }} checked={v.visible && v.home} disabled={busy || !v.visible} onChange={(e) => apply([{ storeId: s.id, name: s.name, home: e.target.checked }])} />
+              في الرئيسية
+            </label>
+          </div>
+        );
+      })}
+      {shown.length === 0 && <p className="adx-muted">مفيش نتايج</p>}
+    </div>
+  );
+}
+
 // إضافة دليفري مباشرة من الأدمن
 function AddDriverForm({ password, onDone, onCreated }) {
   const empty = { name: "", phone: "", vehicleType: "موتوسيكل", region: "طنطا", driverPassword: "" };
@@ -1230,6 +1340,9 @@ export default function Admin() {
         <button className={tab === "live" ? "admin-tab active" : "admin-tab"} onClick={() => setTab("live")}>
           📍 لايف
         </button>
+        <button className={tab === "stores" ? "admin-tab active" : "admin-tab"} onClick={() => setTab("stores")}>
+          🏬 المحلات
+        </button>
       </div>
 
       {tab === "reviews" && (
@@ -1245,6 +1358,7 @@ export default function Admin() {
       {tab === "menu" && <div className="adx"><MenuDiscounts password={password} /></div>}
       {tab === "points" && <div className="adx"><PointsAndDelivery password={password} /></div>}
       {tab === "live" && <div className="adx"><LiveDrivers password={password} /></div>}
+      {tab === "stores" && <div className="adx"><StoresVisibility password={password} /></div>}
 
       {loading && <p style={{ textAlign: "center" }}>جارٍ التحميل...</p>}
 
