@@ -2,8 +2,25 @@
 // من غير ما نعدل data.js: المحل المكتوب في الكود بيفضل زي ما هو ومبيتكررش.
 import { shops, categories, MENU_STORE_KEYS, CART_SCRIPT_URL } from "./data.js";
 
-const CACHE_KEY = "ve_dynamic_stores_v1";
+const CACHE_KEY = "ve_dynamic_stores_v2";
 const added = new Set(); // أرقام المحلات الديناميك اللي اتضافت للقايمة
+
+// ===== التحكم في الظهور (من تاب "المحلات" في الأدمن) =====
+// visibility[storeId] = { visible, home }. المحل اللي مالوش صف = ظاهر وفي الرئيسية (زي الأول).
+let visibility = {};
+let version = 0;
+export const getStoresVersion = () => version; // الصفحات بتحطه في dependencies عشان تتحدّث لما القايمة تتغير
+
+// ظاهر في صفحة المحلات وعند اختيار القسم
+export const isVisible = (shop) => {
+  const v = visibility[String(shop.id)];
+  return !v || v.visible !== false;
+};
+// ظاهر في الرئيسية (لازم يكون ظاهر أصلاً)
+export const isOnHome = (shop) => {
+  const v = visibility[String(shop.id)];
+  return isVisible(shop) && (!v || v.home !== false);
+};
 
 const norm = (s) => String(s || "").toLowerCase().replace(/[\s\-_.'"]+/g, "");
 
@@ -17,24 +34,28 @@ function categoryIdOf(text) {
 
 function readCache() {
   try {
-    const v = JSON.parse(localStorage.getItem(CACHE_KEY) || "[]");
-    return Array.isArray(v) ? v : [];
+    const v = JSON.parse(localStorage.getItem(CACHE_KEY) || "{}");
+    return { stores: Array.isArray(v.stores) ? v.stores : [], visibility: v.visibility && typeof v.visibility === "object" ? v.visibility : {} };
   } catch {
-    return [];
+    return { stores: [], visibility: {} };
   }
 }
 
-function writeCache(list) {
+function writeCache(stores, vis) {
   try {
-    localStorage.setItem(CACHE_KEY, JSON.stringify(list));
+    localStorage.setItem(CACHE_KEY, JSON.stringify({ stores, visibility: vis }));
   } catch {
     /* مش مشكلة */
   }
 }
 
 // بتدمج القايمة في shops و MENU_STORE_KEYS. بترجّع true لو حصل تغيير فعلي.
-export function applyDynamicStores(list) {
+export function applyDynamicStores(list, vis) {
   let changed = false;
+  if (vis && typeof vis === "object" && JSON.stringify(vis) !== JSON.stringify(visibility)) {
+    visibility = vis;
+    changed = true;
+  }
   const wanted = new Map();
   (Array.isArray(list) ? list : []).forEach((s) => s && s.id && wanted.set(String(s.id), s));
 
@@ -88,11 +109,15 @@ export function applyDynamicStores(list) {
       delete MENU_STORE_KEYS[sid];
     }
   });
+  if (changed) version += 1;
   return changed;
 }
 
 // عند تحميل الملف: نطبّق آخر نسخة محفوظة فوراً (عشان الصفحة متظهرش فاضية)
-applyDynamicStores(readCache());
+{
+  const c = readCache();
+  applyDynamicStores(c.stores, c.visibility);
+}
 
 // بتجيب القايمة من الشيت. بترجّع true لو القايمة اتغيرت.
 export async function loadDynamicStores() {
@@ -104,8 +129,9 @@ export async function loadDynamicStores() {
     });
     const data = await res.json();
     if (!data || !data.success || !Array.isArray(data.stores)) return false;
-    writeCache(data.stores);
-    return applyDynamicStores(data.stores);
+    const vis = data.visibility && typeof data.visibility === "object" ? data.visibility : {};
+    writeCache(data.stores, vis);
+    return applyDynamicStores(data.stores, vis);
   } catch {
     return false;
   }
