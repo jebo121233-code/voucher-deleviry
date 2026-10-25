@@ -4,6 +4,22 @@ import { shops, categories, MENU_STORE_KEYS, CART_SCRIPT_URL } from "./data.js";
 
 const CACHE_KEY = "ve_dynamic_stores_v2";
 const added = new Set(); // أرقام المحلات الديناميك اللي اتضافت للقايمة
+let lastStaticSig = "";
+const origStatic = new Map(); // نسخة من بيانات محلات data.js قبل ما بيانات الشيت تغطّي عليها
+const OVERRIDE_FIELDS = ["description", "addresses", "logos", "logoUrl", "images", "percentage", "note", "links"];
+
+// الحقول اللي الأدمن عدّلها من الشيت (الفاضي = سيب اللي في الكود)
+function sheetFields(s) {
+  const o = {};
+  if (s.description) o.description = s.description;
+  if (s.address) o.addresses = [s.address];
+  if (s.logoUrl) { o.logos = [s.logoUrl]; o.logoUrl = s.logoUrl; }
+  if (Array.isArray(s.images) && s.images.length) o.images = s.images;
+  if (s.percentage) o.percentage = s.percentage;
+  if (s.note) o.note = s.note;
+  if (Array.isArray(s.links) && s.links.length) o.links = s.links;
+  return o;
+}
 
 // ===== التحكم في الظهور (من تاب "المحلات" في الأدمن) =====
 // visibility[storeId] = { visible, home }. المحل اللي مالوش صف = ظاهر وفي الرئيسية (زي الأول).
@@ -75,8 +91,29 @@ export function applyDynamicStores(list, vis) {
   );
   const staticNames = new Set(shops.filter((x) => !added.has(x.id)).map((x) => norm(x.name)));
 
+  // رجّع محلات الكود لأصلها الأول، وبعدين طبّق تعديلات الشيت فوقها
+  origStatic.forEach((orig, id) => {
+    const sh = shops.find((x) => x.id === id);
+    if (sh) OVERRIDE_FIELDS.forEach((k) => { if (orig[k] === undefined) delete sh[k]; else sh[k] = orig[k]; });
+  });
+
+  const staticSig = [];
   wanted.forEach((s, key) => {
-    if (staticKeys.has(key) || staticNames.has(norm(s.name))) return; // موجود في الكود
+    if (staticKeys.has(key) || staticNames.has(norm(s.name))) {
+      // موجود في الكود: نطبّق بيانات الشيت (لو الأدمن عدّلها) على المحل الأصلي
+      const target = shops.find((x) => !added.has(x.id) && (String(MENU_STORE_KEYS[x.id]) === key || norm(x.name) === norm(s.name)));
+      if (target) {
+        if (!origStatic.has(target.id)) {
+          const snap = {};
+          OVERRIDE_FIELDS.forEach((k) => { snap[k] = target[k]; });
+          origStatic.set(target.id, snap);
+        }
+        const o = sheetFields(s);
+        Object.keys(o).forEach((k) => { target[k] = o[k]; });
+        staticSig.push(target.id + JSON.stringify(o));
+      }
+      return;
+    }
     const sid = key; // نفس مفتاح المنيو (مش هيتعارض مع أرقام محلات data.js)
     const shop = {
       id: sid,
@@ -84,12 +121,14 @@ export function applyDynamicStores(list, vis) {
       name: s.name,
       description: s.description || "",
       category_ids: [categoryIdOf(s.category)],
-      percentage: "",
+      percentage: s.percentage || "",
+      note: s.note || "",
+      links: Array.isArray(s.links) ? s.links : [],
       status: "Active",
       addresses: s.address ? [s.address] : [],
       logos: s.logoUrl ? [s.logoUrl] : [],
       logoUrl: s.logoUrl || "",
-      images: [],
+      images: Array.isArray(s.images) ? s.images : [],
       dynamic: true,
       deliveryEnabled: s.deliveryEnabled !== false,
     };
@@ -109,6 +148,8 @@ export function applyDynamicStores(list, vis) {
       delete MENU_STORE_KEYS[sid];
     }
   });
+  const sig = staticSig.sort().join("|");
+  if (sig !== lastStaticSig) { lastStaticSig = sig; changed = true; }
   if (changed) version += 1;
   return changed;
 }
