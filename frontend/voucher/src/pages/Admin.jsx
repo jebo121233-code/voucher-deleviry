@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { CART_SCRIPT_URL, shops, categories } from "../data/data.js";
-import { loadDynamicStores } from "../data/dynamicStores.js";
+import { loadDynamicStores, isVisible, isOnHome } from "../data/dynamicStores.js";
 import { uploadImage, assetUrl } from "../data/imageUtil.js";
 import { RestaurantDetail, DriverDetail, CustomerDetail, ChangeLog } from "./AdminDetails.jsx";
 import "./Admin.css";
@@ -956,6 +956,62 @@ function AddDriverForm({ password, onDone, onCreated }) {
   );
 }
 
+// ===== معاينة الموقع: شوف الرئيسية والأقسام زي ما العميل بيشوفها =====
+function SitePreview() {
+  const [view, setView] = useState("home"); // home = الرئيسية | cats = الأقسام
+  const [catId, setCatId] = useState(categories[0] ? categories[0].id : 1);
+  const [busy, setBusy] = useState(false);
+  const [, bump] = useState(0);
+  const refresh = async () => {
+    setBusy(true);
+    await loadDynamicStores();
+    bump((v) => v + 1);
+    setBusy(false);
+  };
+  useEffect(() => { refresh(); }, []);
+
+  const list = view === "home"
+    ? shops.filter(isOnHome)
+    : shops.filter((s) => isVisible(s) && (s.category_ids || []).includes(Number(catId)));
+  const hiddenCount = shops.filter((s) => !isVisible(s)).length;
+  const logoOf = (s) => (s.logos && s.logos[0]) || s.logoUrl || "";
+
+  return (
+    <div>
+      <div className="adm-pv-bar">
+        <button className={view === "home" ? "on" : ""} onClick={() => setView("home")}>🏠 الرئيسية</button>
+        <button className={view === "cats" ? "on" : ""} onClick={() => setView("cats")}>🗂️ الأقسام</button>
+        <button onClick={refresh} disabled={busy}>{busy ? "..." : "🔄 تحديث"}</button>
+      </div>
+      {view === "cats" && (
+        <div className="adm-pv-chips">
+          {categories.map((c) => (
+            <button key={c.id} className={Number(catId) === c.id ? "on" : ""} onClick={() => setCatId(c.id)}>{c.name}</button>
+          ))}
+        </div>
+      )}
+      <p className="adx-muted">
+        {list.length} محل ظاهر {view === "home" ? "في الرئيسية" : "في القسم"} • {hiddenCount} مخفي عن العملاء
+      </p>
+      <div className="adm-pv-grid">
+        {list.map((s) => (
+          <div className="adm-pv-card" key={s.id}>
+            {logoOf(s) ? <img src={assetUrl(logoOf(s))} alt="" /> : <div className="adm-pv-noimg">🏪</div>}
+            <b>{s.name}</b>
+            {s.percentage && <span className="adm-pv-pct">{s.percentage} OFF</span>}
+            <small>
+              {isOnHome(s) ? "🏠 رئيسية" : "👥 عملاء فقط"}
+              {s.deliveryEnabled === false ? "" : s.dynamic || s.menuKey ? " • 🛵 توصيل" : ""}
+            </small>
+          </div>
+        ))}
+      </div>
+      {list.length === 0 && <p style={{ textAlign: "center" }}>مفيش محلات هنا</p>}
+      <a className="adm-btn adm-open" style={{ textDecoration: "none" }} href="/" target="_blank" rel="noopener noreferrer">🌐 افتح الموقع الحقيقي</a>
+    </div>
+  );
+}
+
 export default function Admin() {
   const [password, setPassword] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
@@ -1384,6 +1440,9 @@ export default function Admin() {
         <button className={tab === "settings" ? "admin-tab active" : "admin-tab"} onClick={() => setTab("settings")}>
           ⚙️ إعدادات
         </button>
+        <button className={tab === "preview" ? "admin-tab active" : "admin-tab"} onClick={() => setTab("preview")}>
+          👁️ معاينة الموقع
+        </button>
       </div>
 
       {tab === "reviews" && (
@@ -1396,6 +1455,7 @@ export default function Admin() {
           <Reviews password={password} />
         </div>
       )}
+      {tab === "preview" && <div className="adx"><SitePreview /></div>}
       {tab === "settings" && (
         <div className="adx">
           <h3>⭐ باقات النقاط وتوصيل المطاعم</h3>
