@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, useLocation } from "react-router-dom";
 import Navbar from './pages/Navbar.jsx';
 import Home from './pages/Home.jsx';
 import Footer from "./pages/Footer.jsx";
@@ -31,6 +31,9 @@ import DeliveryRegister from "./pages/DeliveryRegister.jsx";
 import { loadDynamicStores } from "./data/dynamicStores.js";
 
 function App() {
+  // صفحة الأدمن منفصلة تماماً: من غير شريط الموقع ولا الفوتر ولا شريط التنقل السفلي
+  const { pathname } = useLocation();
+  const isAdminPage = pathname.startsWith("/ve-weza-23jj03only");
   // المحلات اللي جاية من الشيت (إضافة أدمن / طلب شراكة اتقبل) بتتحمّل وتتدمج مع محلات data.js
   const [, setStoresVersion] = useState(0);
   useEffect(() => {
@@ -41,7 +44,7 @@ function App() {
     <AuthProvider>
       <CartProvider>
         <ScrollToTop />
-        <Navbar />
+        {!isAdminPage && <Navbar />}
         <Routes>
           <Route path='/' element={<Home/>} />
           <Route path='/stores' element={<Stores/>} />
@@ -65,8 +68,8 @@ function App() {
           <Route path="/points" element={<Points />} />
           <Route path="/track" element={<TrackOrder />} />
         </Routes>
-        <Footer />
-        <BottomNav />
+        {!isAdminPage && <Footer />}
+        {!isAdminPage && <BottomNav />}
       </CartProvider>
     </AuthProvider>
   )
