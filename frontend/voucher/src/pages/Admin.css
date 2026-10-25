@@ -316,3 +316,8 @@
 .adm-ord small{color:#777}
 .adm-search{margin-bottom:6px}
 .adm-open{margin-top:8px;width:100%}
+
+.adm-stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:8px}
+.adm-stat{background:#f6f6f6;border-radius:10px;padding:10px 6px;text-align:center;display:flex;flex-direction:column;gap:2px}
+.adm-stat b{font-size:1.25em;color:#ff6b00}
+.adm-stat span{font-size:.75em;color:#666}
