@@ -379,15 +379,18 @@ export default function Store() {
         </div>}
 
         {/* links */}
-        {store.links && <div className="links_store">
-          <a
-            href={store.links}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="link_store"
-          >
-            Visit Link
-          </a>
+        {store.links && (Array.isArray(store.links) ? store.links.length > 0 : true) && <div className="links_store">
+          {(Array.isArray(store.links) ? store.links : [{ label: "Visit Link", url: store.links }]).map((l, i) => (
+            <a
+              key={i}
+              href={l.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="link_store"
+            >
+              {l.label || "Visit Link"}
+            </a>
+          ))}
         </div>}
 
         {/* STORE IMAGES */}
