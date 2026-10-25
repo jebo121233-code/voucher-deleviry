@@ -1597,18 +1597,6 @@ setTab("reviews")}>
 {pending && pending.total > 0 && <span
 className="adx-badge">{pending.total}</span>}
 </button>
-<button className={tab === "orders" ? "admintab active" : "admin-tab"} onClick={() =>
-setTab("orders")}>
-�� الأوردرات
-</button>
-<button className={tab === "users" ? "admintab active" : "admin-tab"} onClick={() =>
-setTab("users")}>
-�� المستخدمين
-</button>
-<button className={tab === "offers" ? "admintab active" : "admin-tab"} onClick={() =>
-setTab("offers")}>
-️�� العروض
-</button>
 <button className={tab === "partners" ? "admintab active" : "admin-tab"} onClick={() =>
 setTab("partners")}>
 �� الشركاء
@@ -1617,27 +1605,26 @@ setTab("partners")}>
 setTab("delivery")}>
 �� الدليفري
 </button>
-<button className={tab === "menu" ? "admintab active" : "admin-tab"} onClick={() =>
-setTab("menu")}>
-�� المنيو والخصم
+<button className={tab === "users" ? "admintab active" : "admin-tab"} onClick={() =>
+setTab("users")}>
+�� العملاء
 </button>
-<button className={tab === "points" ? "admintab active" : "admin-tab"} onClick={() =>
-setTab("points")}>
-⭐ نقاط وتوصيل
+<button className={tab === "orders" ? "admintab active" : "admin-tab"} onClick={() =>
+setTab("orders")}>
+�� الأوردرات
 </button>
 <button className={tab === "live" ? "admin-tab
 active" : "admin-tab"} onClick={() =>
 setTab("live")}>
 �� لايف
 </button>
-<button className={tab === "stores" ? "admintab active" : "admin-tab"} onClick={() =>
-setTab("stores")}>
-�� المحلات
+<button className={tab === "offers" ? "admintab active" : "admin-tab"} onClick={() =>
+setTab("offers")}>
+️�� العروض
 </button>
-<button className={tab === "log" ? "admin-tab
-active" : "admin-tab"} onClick={() =>
-setTab("log")}>
-�� السجل
+<button className={tab === "settings" ? "admintab active" : "admin-tab"} onClick={() =>
+setTab("settings")}>
+️⚙ إعدادات
 </button>
 </div>
 {tab === "reviews" && (
@@ -1652,20 +1639,21 @@ setTab("log")}>
 <Reviews password={password} />
 </div>
 )}
-{tab === "menu" && <div
-className="adx"><MenuDiscounts
-password={password} /></div>}
-{tab === "points" && <div
-className="adx"><PointsAndDelivery
-password={password} /></div>}
+{tab === "settings" && (
+<div className="adx">
+<h3</باقات النقاط وتوصيل المطاعم ⭐<h3<
+<PointsAndDelivery password={password} />
+<h3 style={{ marginTop: 24 }}>🏬 في اللي المحلات
+<h3</الكود (ظهور فقط)
+<StoresVisibility password={password} />
+<h3 style={{ marginTop: 24 }}>🍔 الأصناف خصم
+<h3)</سريع)
+<MenuDiscounts password={password} />
+<ChangeLog password={password} />
+</div>
+)}
 {tab === "live" && <div
 className="adx"><LiveDrivers
-password={password} /></div>}
-{tab === "stores" && <div
-className="adx"><StoresVisibility
-password={password} /></div>}
-{tab === "log" && <div
-className="adx"><ChangeLog
 password={password} /></div>}
 {detail && detail.kind === "restaurant" && (
 <RestaurantDetail key={detail.data.restaurantId}
@@ -1824,8 +1812,7 @@ return (
 {offer.targetPhone && <span>الرقم :
 {offer.targetPhone}</span>}
 {offer.startDate && <span>من} :new
-Date(offer.startDate).toLocaleDateString("ar-
-EG")}</span>}
+Date(offer.startDate).toLocaleDateString("arEG")}</span>}
 {offer.expiryDate && <span>لـ} :new
 Date(offer.expiryDate).toLocaleDateString("arEG")}</span>}
 </div>
@@ -1894,8 +1881,8 @@ textAlign: "center" }}>طلبات مفيش/>p>}
 <div className="admin-card-header">
 <strong>{req.restaurantName}</strong>
 <span>{req.status === "pending" ? "⏳ قيد
-المراجعة : "req.status === "approved" ? "✅ : "مقبول
-<span ❌""}</مرفوض
+المراجعة : "req.status === "approved" ? "✅ مقبول : "
+"❌ مرفوض"}</span<
 </div>
 <div className="admin-card-body">
 <span>النشاط صاحب} :req.ownerName}</span>
@@ -1987,10 +1974,6 @@ acc.restaurantId} • التوصيل} :acc.deliveryEnabled
 <button className="adm-btn adm-open"
 onClick={() => setDetail({ kind: "restaurant", data:
 <button</فتح كل البيانات والتحكم ��<{({ acc
-<PartnerControls key={acc.restaurantId +
-String(acc.listed) + acc.status + (acc.logoUrl ||
-"")} password={password} acc={acc}
-onDone={fetchRestaurantAccounts} />
 </div>
 ))}
 </div>
@@ -2017,10 +2000,10 @@ href={buildWhatsAppLink(
 approvedDeliveryInfo.phone,
 تمn\n\👋 {approvedDeliveryInfo.name}$ اًمرحب
 تفعيل حسابك كمندوب دليفري على Voucher VE
-$ :الرقمn:\بيانات الدخولn\n✅\
-{approvedDeliveryInfo.phone}\nالباسورد$ :
-{approvedDeliveryInfo.password}\n\n مبروك
-�� الانضمام لينا
+n\n✅\بيانات الدخول:\nالرقم: $
+$ :الباسوردn\{approvedDeliveryInfo.phone}
+مبروكn\n\{approvedDeliveryInfo.password}
+الانضمام لينا ��
 )}
 target="_blank"
 rel="noopener noreferrer"
@@ -2091,7 +2074,8 @@ color: "#c62828" }}>⚠️ {accountsError}</p>}
 0 && <p style={{ textAlign: "center" }}> مفيش
 {<p</حسابات لسه
 {deliveryAccounts.map((acc) => (
-<div key={acc.rowIndex} className="admincard">
+<div key={acc.rowIndex} className="admin-
+card">
 <div className="admin-card-header">
 <strong>{acc.name}</strong>
 <span>{acc.status === "active" ? "🟢 🔴" : "نشط
@@ -2109,8 +2093,6 @@ Date(acc.createdAt).toLocaleDateString("ar-EG")}
 <button className="adm-btn adm-open"
 onClick={() => setDetail({ kind: "driver", data: acc
 <button</فتح كل البيانات والتحكم ��<{({
-<DriverStatusButton password={password}
-acc={acc} onDone={fetchDeliveryAccounts} />
 </div>
 ))}
 </div>
@@ -2119,4 +2101,4 @@ acc={acc} onDone={fetchDeliveryAccounts} />
 </div>
 );
 }
-  
+ 
