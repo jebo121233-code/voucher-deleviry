@@ -1,8 +1,13 @@
 .admin-login-container {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  background: #fff;
+  color: #000;
   display: flex;
   justify-content: center;
   align-items: center;
-  min-height: 60vh;
+  overflow-y: auto;
 }
 
 .admin-login-form {
@@ -29,10 +34,17 @@
 }
 
 .admin-page {
-  max-width: 480px;
-  margin: 0 auto;
-  padding: 20px 16px 80px;
-  color:black;
+  /* صفحة كاملة منفصلة عن الموقع: تغطي الشاشة كلها بخلفية بيضا */
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+  background: #fff;
+  box-sizing: border-box;
+  margin: 0;
+  padding: 20px max(16px, calc((100vw - 760px) / 2)) 80px;
+  color: black;
 }
 
 .admin-tabs {
