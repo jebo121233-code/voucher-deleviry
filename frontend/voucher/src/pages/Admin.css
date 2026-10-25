@@ -333,3 +333,13 @@
 .adm-stat{background:#f6f6f6;border-radius:10px;padding:10px 6px;text-align:center;display:flex;flex-direction:column;gap:2px}
 .adm-stat b{font-size:1.25em;color:#ff6b00}
 .adm-stat span{font-size:.75em;color:#666}
+/* ===== معاينة الموقع ===== */
+.adm-pv-bar,.adm-pv-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
+.adm-pv-bar button,.adm-pv-chips button{flex:1;padding:9px 10px;border:1px solid #ddd;background:#f6f6f6;color:#333;border-radius:10px;font:inherit;cursor:pointer;white-space:nowrap}
+.adm-pv-bar button.on,.adm-pv-chips button.on{background:#ff6b00;color:#fff;border-color:#ff6b00}
+.adm-pv-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px}
+.adm-pv-card{border:1px solid #e3e3e3;border-radius:12px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;background:#fff}
+.adm-pv-card img,.adm-pv-noimg{width:64px;height:64px;border-radius:10px;object-fit:contain;background:#f6f6f6;display:flex;align-items:center;justify-content:center}
+.adm-pv-pct{background:#ff6b00;color:#fff;border-radius:8px;padding:2px 8px;font-size:.8em}
+.adm-pv-card small{color:#777}
+
