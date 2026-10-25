@@ -174,6 +174,113 @@ function MenuEditor({ password, storeId }) {
   );
 }
 
+
+/* ===================== إحصائيات وطلبات ===================== */
+
+const ST_AR = { new: "جديد", pending: "قيد الانتظار", preparing: "بيتحضر", ready: "جاهز", on_the_way: "في الطريق", awaiting_handover: "مستني التسليم", delivered: "✅ تم", cancelled: "❌ ملغي", rejected: "❌ مرفوض" };
+
+function StatBoxes({ stats }) {
+  const box = (n, l) => (<div className="adm-stat" key={l}><b>{n}</b><span>{l}</span></div>);
+  return (
+    <div className="adm-stats">
+      {box(stats.total, "كل الأوردرات")}
+      {box(stats.delivered, "اتوصلت")}
+      {box(stats.active, "شغالة")}
+      {box(stats.cancelled, "ملغية")}
+      {box(stats.sales, "المبيعات (ج)")}
+    </div>
+  );
+}
+
+function OrdersList({ orders, showDriver }) {
+  if (!orders.length) return <p className="adm-hint">مفيش أوردرات لسه</p>;
+  return orders.map((o) => (
+    <div className="adm-ord" key={o.orderId}>
+      <b>{o.orderId} — {o.total} ج — {ST_AR[o.status] || o.status}</b>
+      <small>{o.customerName} ({o.customerPhone}) • {o.paymentMethod} • {fmt(o.timestamp)}</small>
+      <small>{o.items}</small>
+      {showDriver && o.driverName && <small>🛵 {o.driverName}</small>}
+    </div>
+  ));
+}
+
+function PartnerOrders({ password, acc, storeId, onChanged }) {
+  const [ov, setOv] = useState(null);
+  const [err, setErr] = useState("");
+  const [pts, setPts] = useState("");
+  const sv = useSaver();
+  const load = useCallback(async () => {
+    try {
+      const r = await api({ action: "sd_adminPartnerOverview", password, restaurantId: acc.restaurantId });
+      if (r.success) { setOv(r); setPts(String(r.pointsRequired || 0)); setErr(""); } else setErr(r.error || "حصل خطأ");
+    } catch { setErr("مشكلة في الاتصال"); }
+  }, [password, acc.restaurantId]);
+  useEffect(() => { load(); }, [load]);
+  const savePts = async () => {
+    const r = await sv.run(() => api({ action: "pts_adminSetStorePoints", password, updates: [{ storeId, pointsRequired: Number(pts) || 0 }] }));
+    if (r) load();
+  };
+  if (err) return <p className="adm-err">⚠️ {err}</p>;
+  if (!ov) return <p>جارٍ التحميل...</p>;
+  return (
+    <div className="adm-form">
+      <StatBoxes stats={ov.stats} />
+      <h4>⭐ النقاط المطلوبة للطلب من هذا المطعم</h4>
+      <div className="adm-row">
+        <input type="number" inputMode="numeric" value={pts} onChange={(e) => setPts(e.target.value)} />
+        <button className="adm-btn" disabled={sv.busy} onClick={savePts}>💾 حفظ</button>
+      </div>
+      <p className="adm-hint">0 = من غير نقاط. العميل بيدفع النقاط دي مع كل أوردر.</p>
+      <Msg msg={sv.msg} />
+      <h4>🧾 آخر الأوردرات</h4>
+      <OrdersList orders={ov.orders} showDriver />
+    </div>
+  );
+}
+
+function PartnerReviews({ password, acc, onChanged }) {
+  const [reqs, setReqs] = useState(null);
+  const [err, setErr] = useState("");
+  const [disc, setDisc] = useState({});
+  const sv = useSaver();
+  const load = useCallback(async () => {
+    try {
+      const r = await api({ action: "sd_adminPartnerOverview", password, restaurantId: acc.restaurantId });
+      if (r.success) { setReqs(r.requests); setErr(""); } else setErr(r.error || "حصل خطأ");
+    } catch { setErr("مشكلة في الاتصال"); }
+  }, [password, acc.restaurantId]);
+  useEffect(() => { load(); }, [load]);
+  const review = async (q, approve) => {
+    let reason = "";
+    if (!approve) { reason = window.prompt("سبب الرفض؟") || ""; if (!reason.trim()) return; }
+    const r = await sv.run(() => api({ action: "mm_adminReview", password, requestId: q.requestId, approve, reason, discountPercent: disc[q.requestId] }));
+    if (r) { load(); onChanged(); }
+  };
+  if (err) return <p className="adm-err">⚠️ {err}</p>;
+  if (!reqs) return <p>جارٍ التحميل...</p>;
+  const TYPE = { add: "➕ صنف جديد", edit: "✏️ تعديل", update: "✏️ تعديل", delete: "🗑️ حذف", remove: "🗑️ حذف" };
+  return (
+    <div className="adm-form">
+      <p className="adm-hint">{reqs.length} طلب مستني مراجعتك من المطعم ده.</p>
+      {reqs.map((q) => (
+        <div className="adm-item" key={q.requestId}>
+          <b>{TYPE[q.type] || q.type} {q.newData && q.newData.name ? `— ${q.newData.name}` : ""}</b>
+          {q.newData && <small>{Object.keys(q.newData).map((k) => `${k}: ${q.newData[k]}`).join(" • ")}</small>}
+          {q.oldData && <small>قبل: {Object.keys(q.oldData).map((k) => `${k}: ${q.oldData[k]}`).join(" • ")}</small>}
+          {q.type === "add" && (
+            <Field label="نسبة الخصم % (اختياري)"><input type="number" inputMode="decimal" value={disc[q.requestId] || ""} onChange={(e) => setDisc({ ...disc, [q.requestId]: e.target.value })} /></Field>
+          )}
+          <div className="adm-row">
+            <button className="adm-btn" disabled={sv.busy} onClick={() => review(q, true)}>✅ موافقة</button>
+            <button className="adm-btn red" disabled={sv.busy} onClick={() => review(q, false)}>❌ رفض</button>
+          </div>
+        </div>
+      ))}
+      <Msg msg={sv.msg} />
+    </div>
+  );
+}
+
 /* ===================== المطعم ===================== */
 
 const VIS = [
@@ -254,7 +361,7 @@ export function RestaurantDetail({ password, acc, onClose, onChanged }) {
   return (
     <Modal title={`🏪 ${cur.restaurantName || f.name}`} onClose={onClose}>
       <div className="adm-tabs">
-        {[["info", "📝 البيانات"], ["media", "🖼️ الصور"], ["menu", "🍽️ المنيو"], ["ctl", "⚙️ التحكم"]].map(([k, l]) => (
+        {[["info", "📝 البيانات"], ["orders", "📊 الطلبات والنقاط"], ["menu", "🍽️ المنيو"], ["review", "📝 المراجعات"], ["media", "🖼️ الصور"], ["ctl", "⚙️ التحكم"]].map(([k, l]) => (
           <button key={k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{l}</button>
         ))}
       </div>
@@ -310,6 +417,8 @@ export function RestaurantDetail({ password, acc, onClose, onChanged }) {
         </div>
       )}
 
+      {tab === "orders" && <PartnerOrders password={password} acc={acc} storeId={storeId} onChanged={onChanged} />}
+      {tab === "review" && <PartnerReviews password={password} acc={acc} onChanged={onChanged} />}
       {tab === "menu" && <MenuEditor password={password} storeId={storeId} />}
 
       {tab === "ctl" && (
@@ -338,6 +447,10 @@ export function DriverDetail({ password, acc, onClose, onChanged }) {
   const [f, setF] = useState({ name: acc.name || "", phone: String(acc.phone || ""), driverPassword: String(acc.password || ""), vehicleType: acc.vehicleType || "", region: acc.region || "", status: acc.status || "active" });
   const { busy, msg, run } = useSaver();
   const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const [ov, setOv] = useState(null);
+  useEffect(() => {
+    api({ action: "sd_adminDriverOverview", password, phone: String(acc.phone) }).then((r) => r.success && setOv(r)).catch(() => {});
+  }, [password, acc.phone]);
   const save = async () => {
     const r = await run(() => api({ action: "sd_adminUpdateDriver", password, deliveryId: acc.deliveryId, ...f }));
     if (r) onChanged();
@@ -345,6 +458,7 @@ export function DriverDetail({ password, acc, onClose, onChanged }) {
   return (
     <Modal title={`🛵 ${acc.name}`} onClose={onClose}>
       <div className="adm-form">
+        {ov && <><StatBoxes stats={ov.stats} /><p className="adm-hint">{ov.busy ? `🛵 معاه أوردر شغال ${ov.currentOrderId}` : "🟢 فاضي دلوقتي"}</p></>}
         <Field label="الاسم"><input value={f.name} onChange={set("name")} /></Field>
         <Field label="الموبايل"><input inputMode="tel" value={f.phone} onChange={set("phone")} /></Field>
         <Field label="الباسورد"><input value={f.driverPassword} onChange={set("driverPassword")} /></Field>
@@ -358,6 +472,7 @@ export function DriverDetail({ password, acc, onClose, onChanged }) {
         </Field>
         <button className="adm-btn big" disabled={busy} onClick={save}>{busy ? "جارٍ الحفظ..." : "💾 حفظ"}</button>
         <Msg msg={msg} />
+        {ov && <><h4>🧾 آخر أوردراته</h4><OrdersList orders={ov.orders} /></>}
       </div>
     </Modal>
   );
