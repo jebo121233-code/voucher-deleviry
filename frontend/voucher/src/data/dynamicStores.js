@@ -28,13 +28,15 @@ let version = 0;
 export const getStoresVersion = () => version; // الصفحات بتحطه في dependencies عشان تتحدّث لما القايمة تتغير
 
 // ظاهر في صفحة المحلات وعند اختيار القسم
+// الصف بيتدوّر عليه برقم المحل، ولو مفيش فبمفتاح المنيو (لما الأدمن بيتحكم من ملف الشريك بيتسجل بمفتاح المنيو)
+const visRow = (shop) => visibility[String(shop.id)] || visibility[String(MENU_STORE_KEYS[shop.id] || "")];
 export const isVisible = (shop) => {
-  const v = visibility[String(shop.id)];
+  const v = visRow(shop);
   return !v || v.visible !== false;
 };
 // ظاهر في الرئيسية (لازم يكون ظاهر أصلاً)
 export const isOnHome = (shop) => {
-  const v = visibility[String(shop.id)];
+  const v = visRow(shop);
   return isVisible(shop) && (!v || v.home !== false);
 };
 
