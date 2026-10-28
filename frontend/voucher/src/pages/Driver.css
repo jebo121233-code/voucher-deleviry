@@ -22,3 +22,7 @@
 .drv-inline { width: auto; margin: 0; padding: 8px 18px; }
 .drv-ok { background: #1b7f3b; color: #fff; }
 .drv-nav { background: #1a73e8; color: #fff; text-decoration: none; }
+
+.drv-shift { border: 2px solid #ddd; }
+.drv-shift.on { border-color: #22a45d; background: #f3fbf6; }
+.drv-end { background: #c0392b; }
