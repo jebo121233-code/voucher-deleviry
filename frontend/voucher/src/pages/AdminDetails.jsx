@@ -361,7 +361,7 @@ export function RestaurantDetail({ password, acc, onClose, onChanged }) {
   return (
     <Modal title={`🏪 ${cur.restaurantName || f.name}`} onClose={onClose}>
       <div className="adm-tabs">
-        {[["info", "📝 البيانات"], ["orders", "📊 الطلبات والنقاط"], ["menu", "🍽️ المنيو"], ["review", "📝 المراجعات"], ["media", "🖼️ الصور"], ["ctl", "⚙️ التحكم"]].map(([k, l]) => (
+        {[["info", "📝 البيانات"], ["orders", "📊 الطلبات والنقاط"], ["menu", "🍽️ المنيو"], ["review", "📝 المراجعات"], ["media", "🖼️ الصور"], ["log", "📜 السجل"], ["ctl", "⚙️ التحكم"]].map(([k, l]) => (
           <button key={k} className={tab === k ? "on" : ""} onClick={() => setTab(k)}>{l}</button>
         ))}
       </div>
@@ -420,6 +420,7 @@ export function RestaurantDetail({ password, acc, onClose, onChanged }) {
       {tab === "orders" && <PartnerOrders password={password} acc={acc} storeId={storeId} onChanged={onChanged} />}
       {tab === "review" && <PartnerReviews password={password} acc={acc} onChanged={onChanged} />}
       {tab === "menu" && <MenuEditor password={password} storeId={storeId} />}
+      {tab === "log" && <ActivityList password={password} store={String(storeId)} extraStores={[String(acc.restaurantId || "")]} />}
 
       {tab === "ctl" && (
         <div className="adm-form">
@@ -472,9 +473,171 @@ export function DriverDetail({ password, acc, onClose, onChanged }) {
         </Field>
         <button className="adm-btn big" disabled={busy} onClick={save}>{busy ? "جارٍ الحفظ..." : "💾 حفظ"}</button>
         <Msg msg={msg} />
+        <ShiftsPanel password={password} phone={String(acc.phone)} onChanged={onChanged} />
+        <h4>📜 سجل حركاته</h4>
+        <ActivityList password={password} type="driver" actor={acc.name} />
         {ov && <><h4>🧾 آخر أوردراته</h4><OrdersList orders={ov.orders} /></>}
       </div>
     </Modal>
+  );
+}
+
+
+/* ===================== الشيفتات والمسار ===================== */
+
+const DAYS_AR = ["الأحد", "الاثنين", "الثلاثاء", "الأربعاء", "الخميس", "الجمعة", "السبت"];
+const hm = (v) => (v ? new Date(v).toLocaleString("ar-EG", { weekday: "short", hour: "2-digit", minute: "2-digit", day: "numeric", month: "numeric" }) : "—");
+const dur = (a, b) => {
+  const m = Math.max(0, Math.round(((b || Date.now()) - a) / 60000));
+  return `${Math.floor(m / 60)}س ${m % 60}د`;
+};
+
+function TrackMap({ points }) {
+  if (!points || points.length < 2) return <p className="adm-hint">مفيش نقط كفاية للمسار.</p>;
+  const lats = points.map((p) => p.lat), lngs = points.map((p) => p.lng);
+  const minLa = Math.min(...lats), maxLa = Math.max(...lats), minLn = Math.min(...lngs), maxLn = Math.max(...lngs);
+  const W = 320, H = 240, pad = 14;
+  const k = Math.cos(((minLa + maxLa) / 2) * Math.PI / 180);
+  const spanX = Math.max((maxLn - minLn) * k, 1e-5), spanY = Math.max(maxLa - minLa, 1e-5);
+  const sc = Math.min((W - pad * 2) / spanX, (H - pad * 2) / spanY);
+  const X = (p) => pad + ((p.lng - minLn) * k) * sc;
+  const Y = (p) => H - pad - (p.lat - minLa) * sc;
+  const pts = points.map((p) => `${X(p).toFixed(1)},${Y(p).toFixed(1)}`).join(" ");
+  const a = points[0], z = points[points.length - 1];
+  return (
+    <svg viewBox={`0 0 ${W} ${H}`} className="adm-track" role="img" aria-label="مسار الدليفري">
+      <rect width={W} height={H} rx="10" fill="#f4f6f8" />
+      <polyline points={pts} fill="none" stroke="#ff6b00" strokeWidth="2.5" strokeLinejoin="round" />
+      <circle cx={X(a)} cy={Y(a)} r="6" fill="#22a45d" />
+      <circle cx={X(z)} cy={Y(z)} r="6" fill="#c0392b" />
+    </svg>
+  );
+}
+
+function ShiftsPanel({ password, phone, onChanged }) {
+  const [st, setSt] = useState(null);
+  const [rows, setRows] = useState([]);
+  const [leave, setLeave] = useState({ onLeave: false, until: "" });
+  const [trk, setTrk] = useState(null);
+  const { busy, msg, run } = useSaver();
+
+  const load = useCallback(async () => {
+    try {
+      const r = await api({ action: "sh_adminGetDriver", password, phone });
+      if (r.success) {
+        setSt(r);
+        setRows((r.schedule || []).map((x) => ({ day: x.day, start: x.start, end: x.end })));
+        setLeave({ onLeave: !!r.leaveForever, until: r.leaveUntil || "" });
+      }
+    } catch { /* ignore */ }
+  }, [password, phone]);
+  useEffect(() => { load(); }, [load]);
+
+  const save = async () => {
+    const r = await run(() => api({ action: "sh_adminSetSchedule", password, phone, shifts: rows, onLeave: leave.onLeave, leaveUntil: leave.onLeave ? "" : leave.until }));
+    if (r) { await load(); onChanged && onChanged(); }
+  };
+  const forceEnd = async () => {
+    if (!window.confirm("إنهاء شيفت الدليفري دلوقتي؟")) return;
+    const r = await run(() => api({ action: "sh_adminEndShift", password, phone }));
+    if (r) { await load(); onChanged && onChanged(); }
+  };
+  const showTrack = async (id) => {
+    setTrk({ id, loading: true });
+    try {
+      const r = await api({ action: "sh_adminShiftTrack", password, shiftId: id });
+      setTrk(r.success ? { id, ...r } : { id, err: r.error || "حصل خطأ" });
+    } catch { setTrk({ id, err: "مشكلة في الاتصال" }); }
+  };
+  const setRow = (i, k, v) => setRows(rows.map((r, j) => (j === i ? { ...r, [k]: v } : r)));
+
+  if (!st) return <p className="adm-hint">جارٍ تحميل الشيفتات...</p>;
+  return (
+    <div className="adm-shifts">
+      <h4>🕒 الشيفتات</h4>
+      <p className="adm-hint">
+        {st.onDuty ? `🟢 في الشيفت من ${hm(st.startedAt)} (${dur(st.startedAt)})${st.overrun ? " — ميعاده خلص وبيكمّل أوردر" : ""}` : st.onLeave ? "🏖️ في إجازة" : "⚪ برّه الشيفت — مش بيجيله أوردرات"}
+        {!st.hasSchedule && " • مفيش جدول: يقدر يبدأ في أي وقت"}
+      </p>
+      {st.onDuty && <button className="adm-btn" disabled={busy} onClick={forceEnd}>⏹️ إنهاء شيفته دلوقتي</button>}
+
+      {rows.map((r, i) => (
+        <div className="adm-shift-row" key={i}>
+          <select value={r.day} onChange={(e) => setRow(i, "day", Number(e.target.value))}>
+            {DAYS_AR.map((n, d) => <option key={d} value={d}>{n}</option>)}
+          </select>
+          <input type="time" value={r.start} onChange={(e) => setRow(i, "start", e.target.value)} />
+          <span>→</span>
+          <input type="time" value={r.end} onChange={(e) => setRow(i, "end", e.target.value)} />
+          <button type="button" className="adm-x" onClick={() => setRows(rows.filter((_, j) => j !== i))}>✕</button>
+        </div>
+      ))}
+      <button type="button" className="adm-btn" onClick={() => setRows([...rows, { day: 0, start: "10:00", end: "18:00" }])}>➕ إضافة شيفت</button>
+      <p className="adm-hint">لو الشيفت بيعدّي نص الليل (مثلاً 22:00 → 02:00) هيتحسب على اليوم اللي بدأ فيه.</p>
+
+      <label className="adm-check">
+        <input type="checkbox" checked={leave.onLeave} onChange={(e) => setLeave({ ...leave, onLeave: e.target.checked })} /> 🏖️ في إجازة (لحد ما أرجعه)
+      </label>
+      {!leave.onLeave && (
+        <Field label="أو إجازة لحد تاريخ (شامل اليوم ده)">
+          <input type="date" value={leave.until} onChange={(e) => setLeave({ ...leave, until: e.target.value })} />
+        </Field>
+      )}
+      <button className="adm-btn big" disabled={busy} onClick={save}>{busy ? "جارٍ الحفظ..." : "💾 حفظ الشيفتات والإجازة"}</button>
+      <Msg msg={msg} />
+
+      <h4>📍 سجل الشيفتات والمسار</h4>
+      {(st.shifts || []).length === 0 && <p className="adm-hint">لسه مفيش شيفتات اتسجلت.</p>}
+      {(st.shifts || []).map((s) => (
+        <div className="adm-ord" key={s.shiftId}>
+          <b>{hm(s.startAt)} ← {s.active ? "شغال دلوقتي" : hm(s.endAt)}</b>
+          <small>المدة {dur(s.startAt, s.endAt)} • سلّم {s.delivered} أوردر{s.endedBy ? ` • الإنهاء: ${s.endedBy}` : ""}</small>
+          <button type="button" className="adm-btn" onClick={() => showTrack(s.shiftId)}>🗺️ المسار</button>
+          {trk && trk.id === s.shiftId && (
+            trk.loading ? <p className="adm-hint">جارٍ التحميل...</p>
+              : trk.err ? <p className="adm-err">⚠️ {trk.err}</p>
+              : <><TrackMap points={trk.points} /><p className="adm-hint">{trk.totalPoints} نقطة • حوالي {trk.distanceKm} كم • 🟢 البداية 🔴 النهاية</p></>
+          )}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/* ===================== سجل الحركات ===================== */
+
+const TYPE_AR = { admin: "👑 الأدمن", partner: "🏪 المطعم", driver: "🛵 دليفري", system: "⚙️ السيستم" };
+
+function ActivityList({ password, store, extraStores, type, actor }) {
+  const [log, setLog] = useState(null);
+  const [err, setErr] = useState("");
+  const [kind, setKind] = useState(type || "");
+  useEffect(() => {
+    api({ action: "sd_adminGetLog", password, limit: 300, store: store || "", type: kind })
+      .then((r) => (r.success ? setLog(r.log) : setErr(r.error || "حصل خطأ")))
+      .catch(() => setErr("مشكلة في الاتصال"));
+  }, [password, store, kind]);
+  if (err) return <p className="adm-err">⚠️ {err}</p>;
+  if (!log) return <p className="adm-hint">جارٍ التحميل...</p>;
+  const list = log.filter((l) => (!actor || String(l.actor) === String(actor) || String(l.target).includes(actor)));
+  return (
+    <div className="adm-log">
+      {!type && (
+        <div className="adm-seg">
+          {[["", "الكل"], ["admin", "الأدمن"], ["partner", "المطاعم"], ["driver", "الدليفري"]].map(([k, l]) => (
+            <button key={k} className={kind === k ? "on" : ""} onClick={() => { setLog(null); setKind(k); }}>{l}</button>
+          ))}
+        </div>
+      )}
+      {list.length === 0 && <p className="adm-hint">مفيش حركات مسجلة.</p>}
+      {list.map((l, i) => (
+        <div className="adm-ord" key={i}>
+          <b>{l.action}{l.target ? ` — ${l.target}` : ""}</b>
+          <small>{TYPE_AR[l.type] || l.type}: {l.actor || "—"} • {fmt(l.time)}</small>
+          {l.detail && <small className="adm-detail">{String(l.detail)}</small>}
+        </div>
+      ))}
+    </div>
   );
 }
 
@@ -571,23 +734,10 @@ export function CustomerDetail({ password, phone, onClose, onChanged }) {
 /* ===================== سجل التعديلات ===================== */
 
 export function ChangeLog({ password }) {
-  const [log, setLog] = useState(null);
-  const [err, setErr] = useState("");
-  useEffect(() => {
-    api({ action: "sd_adminGetLog", password, limit: 100 }).then((r) => (r.success ? setLog(r.log) : setErr(r.error || "حصل خطأ"))).catch(() => setErr("مشكلة في الاتصال"));
-  }, [password]);
-  if (err) return <p className="adm-err">⚠️ {err}</p>;
-  if (!log) return <p>جارٍ التحميل...</p>;
   return (
     <div>
-      <h3>📜 سجل التعديلات</h3>
-      {log.length === 0 && <p>مفيش تعديلات لسه</p>}
-      {log.map((l, i) => (
-        <div className="adm-ord" key={i}>
-          <b>{l.action}</b> — {l.target}
-          <small>{l.detail} • {fmt(l.time)}</small>
-        </div>
-      ))}
+      <h3>📜 سجل كل الحركات</h3>
+      <ActivityList password={password} />
     </div>
   );
 }
