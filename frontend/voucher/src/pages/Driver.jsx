@@ -58,7 +58,10 @@ export default function Driver() {
   const [busyAction, setBusyAction] = useState("");
   const [loaded, setLoaded] = useState(false);
   const [gps, setGps] = useState("waiting"); // waiting | ok | denied | unsupported
+  const [shift, setShift] = useState(null); // حالة الشيفت من السيرفر
+  const [shiftBusy, setShiftBusy] = useState(false);
   const lastPos = useRef(null);
+  const trackOn = useRef(false); // الموقع بيتبعت بس في الشيفت أو مع أوردر شغال
   const intervalSec = useRef(30);
 
   useEffect(() => {
@@ -69,6 +72,51 @@ export default function Driver() {
     (action, extra = {}) => api({ action, driverPhone: phone, token, ...extra }),
     [phone, token]
   );
+
+  const loadShift = useCallback(async () => {
+    if (!phone || !token) return null;
+    try {
+      const r = await api({ action: "sh_driverStatus", phone, token });
+      if (r.success) {
+        setShift(r);
+        return r;
+      }
+    } catch {
+      /* بنحاول في الدورة الجاية */
+    }
+    return null;
+  }, [phone, token]);
+
+  const startShift = async () => {
+    setShiftBusy(true);
+    setError("");
+    try {
+      const r = await api({ action: "sh_driverStart", phone, token });
+      if (!r.success) setError(r.error || "مقدرناش نبدأ الشيفت");
+      await loadShift();
+      await refresh();
+    } catch {
+      setError("مشكلة في الاتصال، حاول تاني");
+    } finally {
+      setShiftBusy(false);
+    }
+  };
+
+  const endShift = async () => {
+    if (!window.confirm("تأكيد إنهاء الشيفت؟ مش هتستقبل أوردرات جديدة بعد كده.")) return;
+    setShiftBusy(true);
+    setError("");
+    try {
+      const r = await api({ action: "sh_driverEnd", phone, token });
+      if (!r.success) setError(r.error || "مقدرناش ننهي الشيفت");
+      await loadShift();
+      await refresh();
+    } catch {
+      setError("مشكلة في الاتصال، حاول تاني");
+    } finally {
+      setShiftBusy(false);
+    }
+  };
 
   // ===== تحديث الشغل =====
   const refresh = useCallback(async () => {
@@ -81,6 +129,7 @@ export default function Driver() {
       }
       setError("");
       setCurrent(cur.order || null);
+      trackOn.current = !!cur.order || trackOn.current;
       if (cur.order) {
         setAvailable([]);
         const t = await api({ action: "tr_driverTarget", phone, token, orderId: cur.order.OrderID });
@@ -89,6 +138,7 @@ export default function Driver() {
         setTarget(null);
         const av = await call("of_driverAvailable");
         if (av.success) setAvailable(av.orders || []);
+        if (av.success && av.offDuty) setAvailable([]);
       }
     } catch {
       setError("مشكلة في الاتصال، هنحاول تاني");
@@ -99,11 +149,19 @@ export default function Driver() {
 
   useEffect(() => {
     refresh();
+    loadShift();
     const id = setInterval(() => {
-      if (document.visibilityState === "visible") refresh();
+      if (document.visibilityState === "visible") {
+        refresh();
+        loadShift();
+      }
     }, POLL_MS);
     return () => clearInterval(id);
-  }, [refresh]);
+  }, [refresh, loadShift]);
+
+  useEffect(() => {
+    trackOn.current = !!(shift && shift.onDuty) || !!current;
+  }, [shift, current]);
 
   useEffect(() => {
     if (tab !== "history" || !phone) return;
@@ -120,6 +178,10 @@ export default function Driver() {
 
     const flush = async () => {
       if (stopped || sending || !buffer.length) return;
+      if (!trackOn.current) {
+        buffer.length = 0; // برّه الشيفت: مفيش تتبع
+        return;
+      }
       if (Date.now() - lastSent < intervalSec.current * 1000) return;
       sending = true;
       const pts = buffer.splice(0, buffer.length).slice(-20);
@@ -156,7 +218,7 @@ export default function Driver() {
 
     // لو واقف مكانه مفيش تحديثات جديدة، فبنكرر آخر مكان عشان الإدارة تشوفه أونلاين
     const timer = setInterval(() => {
-      if (!buffer.length && lastPos.current && Date.now() - lastSent >= intervalSec.current * 1000) {
+      if (trackOn.current && !buffer.length && lastPos.current && Date.now() - lastSent >= intervalSec.current * 1000) {
         buffer.push({ ...lastPos.current, t: Date.now() });
       }
       flush();
@@ -191,7 +253,7 @@ export default function Driver() {
   if (role !== "delivery" || !driver) return null;
 
   const gpsLabel = {
-    ok: "📍 مكانك بيتبعت",
+    ok: shift && !shift.onDuty && !current ? "📍 الموقع مش بيتبعت (برّه الشيفت)" : "📍 مكانك بيتبعت",
     waiting: "📡 بندوّر على الموقع...",
     denied: "⚠️ اسمح للموقع من إعدادات المتصفح",
     unsupported: "⚠️ الجهاز مبيدعمش الموقع",
@@ -298,11 +360,48 @@ export default function Driver() {
 
       {error && <p className="drv-error">{error}</p>}
 
+      {shift && (
+        <div className={`drv-card drv-shift ${shift.onDuty ? "on" : ""}`}>
+          <div className="drv-row">
+            <strong>{shift.onDuty ? "🟢 في الشيفت" : shift.onLeave ? "🏖️ إجازة" : "⚪ برّه الشيفت"}</strong>
+            {shift.onDuty && shift.startedAt > 0 && (
+              <span className="drv-muted">بدأت {new Date(shift.startedAt).toLocaleTimeString("ar-EG", { hour: "2-digit", minute: "2-digit" })}</span>
+            )}
+          </div>
+          {shift.hasSchedule ? (
+            <div className="drv-muted">
+              {shift.today && shift.today.length ? `شيفت النهاردة: ${shift.today.join(" ، ")}` : "النهاردة مفيش شيفت"}
+              {!shift.onDuty && shift.next && !shift.canStart && ` • الشيفت الجاي: ${shift.next.dayName || ""} ${shift.next.start || ""}`}
+            </div>
+          ) : (
+            <div className="drv-muted">مفيش جدول محدد، تقدر تبدأ في أي وقت.</div>
+          )}
+          {shift.overrun && <div className="drv-warn">الشيفت خلص ميعاده، هيتقفل أول ما تسلّم الأوردر الحالي.</div>}
+          {!shift.onDuty && !shift.canStart && (
+            <div className="drv-muted">{shift.onLeave ? "أنت في إجازة دلوقتي." : "لسه مجاش ميعاد شيفتك."}</div>
+          )}
+          {!shift.onDuty && (
+            <button className="drv-btn drv-ok" disabled={shiftBusy || !shift.canStart} onClick={startShift}>
+              ▶️ ابدأ الشيفت
+            </button>
+          )}
+          {shift.onDuty && (
+            <button className="drv-btn drv-end" disabled={shiftBusy || !!current} onClick={endShift}>
+              ⏹️ إنهاء الشيفت
+            </button>
+          )}
+          {shift.onDuty && current && <div className="drv-muted">مش هتقدر تنهي الشيفت وعندك أوردر شغال.</div>}
+        </div>
+      )}
+
       {tab === "work" && (
         <>
           {!loaded && <p className="drv-muted">جارٍ التحميل...</p>}
           {loaded && current && renderCurrent(current)}
-          {loaded && !current && (
+          {loaded && !current && shift && !shift.onDuty && (
+            <p className="drv-muted">ابدأ الشيفت عشان تستقبل أوردرات.</p>
+          )}
+          {loaded && !current && !(shift && !shift.onDuty) && (
             <>
               <h3>أوردرات متاحة</h3>
               {available.length === 0 && <p className="drv-muted">مفيش أوردرات دلوقتي، هتظهر هنا أول ما توصل.</p>}
