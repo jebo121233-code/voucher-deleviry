@@ -557,7 +557,7 @@ function LiveDrivers({ password }) {
       {drivers.map((d) => (
         <div className={`adx-card ${chosen && chosen.phone === d.phone ? "adx-sel" : ""}`} key={d.phone} onClick={() => setSel(d.phone)}>
           <div className="adx-row">
-            <strong>{d.name}</strong>
+            <strong>{d.name}</strong>{d.onDuty ? <span className="adm-duty"> 🟢 في الشيفت</span> : <span className="adm-duty off"> ⚪ برّه الشيفت</span>}
             <span>{STATE_TEXT[d.state] || d.state}</span>
           </div>
           <div className="adx-muted">
@@ -1814,4 +1814,4 @@ export default function Admin() {
       )}
     </div>
   );
-}
+               }
