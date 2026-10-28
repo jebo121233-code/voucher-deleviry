@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate, Link } from "react-router-dom";
 import "./Store.css";
+import { readMenu, fetchMenuFresh } from "../data/menuCache.js";
 import { shops as fakeStores, MENU_STORE_KEYS, CART_SCRIPT_URL } from "../data/data.js";
 import { useCart } from "../context/CartContext.jsx";
 import { assetUrl } from "../data/imageUtil.js";
@@ -264,31 +265,25 @@ export default function Store() {
       return;
     }
 
-    const fetchMenu = async () => {
-      setMenuLoading(true);
-      try {
-        const res = await fetch(CART_SCRIPT_URL, {
-          method: "POST",
-          headers: { "Content-Type": "text/plain;charset=utf-8" },
-          body: JSON.stringify({ action: "getMenu", storeId: menuKey }),
-        });
-        const data = await res.json();
-        if (data.success) {
-          setMenuItems(data.items);
-          setPointsRequired(Number(data.pointsRequired) || 0);
-          setDeliveryEnabled(data.deliveryEnabled !== false);
-        } else {
-          setMenuItems([]);
-        }
-      } catch (err) {
-        console.error("فشل تحميل المنيو:", err);
-        setMenuItems([]);
-      } finally {
-        setMenuLoading(false);
-      }
+    // 1) اعرض آخر منيو محفوظ فوراً   2) حدّثه من السيرفر في الخلفية
+    let alive = true;
+    const apply = (m) => {
+      setMenuItems(m.items);
+      setPointsRequired(Number(m.pointsRequired) || 0);
+      setDeliveryEnabled(m.deliveryEnabled !== false);
     };
-
-    fetchMenu();
+    const cached = readMenu(menuKey);
+    if (cached) apply(cached);
+    setMenuLoading(!cached);
+    fetchMenuFresh(menuKey).then((fresh) => {
+      if (!alive) return;
+      if (fresh) apply(fresh);
+      else if (!cached) setMenuItems([]);
+      setMenuLoading(false);
+    });
+    return () => {
+      alive = false;
+    };
   }, [store]);
 
   useEffect(() => {
@@ -697,4 +692,4 @@ export default function Store() {
       </div>
     </div>
   );
-}
+                        }
