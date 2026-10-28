@@ -333,6 +333,7 @@
 .adm-stat{background:#f6f6f6;border-radius:10px;padding:10px 6px;text-align:center;display:flex;flex-direction:column;gap:2px}
 .adm-stat b{font-size:1.25em;color:#ff6b00}
 .adm-stat span{font-size:.75em;color:#666}
+
 /* ===== معاينة الموقع ===== */
 .adm-pv-bar,.adm-pv-chips{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px}
 .adm-pv-bar button,.adm-pv-chips button{flex:1;padding:9px 10px;border:1px solid #ddd;background:#f6f6f6;color:#333;border-radius:10px;font:inherit;cursor:pointer;white-space:nowrap}
@@ -343,3 +344,12 @@
 .adm-pv-pct{background:#ff6b00;color:#fff;border-radius:8px;padding:2px 8px;font-size:.8em}
 .adm-pv-card small{color:#777}
 
+/* الشيفتات والسجل */
+.adm-shift-row{display:flex;gap:6px;align-items:center;margin:6px 0;flex-wrap:wrap}
+.adm-shift-row select,.adm-shift-row input{padding:8px;border:1px solid #ddd;border-radius:8px;font:inherit}
+.adm-x{border:0;background:#fdecea;color:#c0392b;border-radius:8px;padding:8px 10px;cursor:pointer}
+.adm-check{display:flex;gap:8px;align-items:center;margin:10px 0}
+.adm-track{width:100%;max-width:360px;display:block;margin:8px 0}
+.adm-detail{display:block;white-space:pre-wrap;color:#555;margin-top:2px}
+.adm-log .adm-seg{display:flex;gap:6px;margin-bottom:8px}
+.adm-duty{font-size:12px;color:#22a45d;margin-inline-start:6px}.adm-duty.off{color:#888}
