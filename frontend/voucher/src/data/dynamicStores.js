@@ -6,7 +6,7 @@ const CACHE_KEY = "ve_dynamic_stores_v2";
 const added = new Set(); // أرقام المحلات الديناميك اللي اتضافت للقايمة
 let lastStaticSig = "";
 const origStatic = new Map(); // نسخة من بيانات محلات data.js قبل ما بيانات الشيت تغطّي عليها
-const OVERRIDE_FIELDS = ["description", "addresses", "logos", "logoUrl", "images", "percentage", "note", "links"];
+const OVERRIDE_FIELDS = ["description", "addresses", "logos", "logoUrl", "images", "percentage", "note", "links", "altName"];
 
 // الحقول اللي الأدمن عدّلها من الشيت (الفاضي = سيب اللي في الكود)
 function sheetFields(s) {
@@ -17,6 +17,7 @@ function sheetFields(s) {
   if (Array.isArray(s.images) && s.images.length) o.images = s.images;
   if (s.percentage) o.percentage = s.percentage;
   if (s.note) o.note = s.note;
+  if (s.altName) o.altName = s.altName;
   if (Array.isArray(s.links) && s.links.length) o.links = s.links;
   return o;
 }
@@ -125,6 +126,7 @@ export function applyDynamicStores(list, vis) {
       category_ids: [categoryIdOf(s.category)],
       percentage: s.percentage || "",
       note: s.note || "",
+      altName: s.altName || "",
       links: Array.isArray(s.links) ? s.links : [],
       status: "Active",
       addresses: s.address ? [s.address] : [],
