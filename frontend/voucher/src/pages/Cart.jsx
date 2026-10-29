@@ -6,6 +6,7 @@ import "./Cart.css";
 import { useCart } from "../context/CartContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { CART_SCRIPT_URL, WHATSAPP_NUMBER, MENU_STORE_KEYS } from "../data/data.js";
+import AddressPicker from "../components/AddressPicker.jsx";
 
 const CARD_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfL4bWVRHsgjOa2I5J2RC38pF2olaUMWsVghwxfuz9MrJyslA/formResponse";
 
@@ -71,6 +72,7 @@ export default function Cart() {
   const [addressMode, setAddressMode] = useState(addresses.length > 0 ? "select" : "new");
   const [selectedAddressId, setSelectedAddressId] = useState(addresses[0]?.id || null);
   const [coords, setCoords] = useState(null); // { lat, lng, accuracy }
+  const [saveAddr, setSaveAddr] = useState(true);
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState("");
   const [copied, setCopied] = useState(false);
@@ -277,7 +279,7 @@ export default function Cart() {
     }
 
     // ---------- 2) حفظ عنوان جديد لو المستخدم دخل عنوان جديد ----------
-    if (addressMode === "new" && form.address.trim()) {
+    if (addressMode === "new" && saveAddr && form.address.trim()) {
       const alreadyExists = addresses.some((a) => a.address.trim() === form.address.trim());
       if (!alreadyExists) {
         const entry = { id: Date.now(), label: form.addressLabel.trim() || "عنوان جديد", address: form.address.trim() };
@@ -503,12 +505,25 @@ export default function Cart() {
 
         {addressMode === "new" && (
           <>
-            <input type="text" name="addressLabel" placeholder="اسم الشارع ( رقم المنزل ، علامة مميزة)" value={form.addressLabel} onChange={handleChange} />
-            <input type="text" name="address" placeholder="العنوان بالتفصيل" value={form.address} onChange={handleChange} required />
+            <AddressPicker
+              required
+              value={{ label: form.addressLabel, address: form.address, lat: coords ? coords.lat : null, lng: coords ? coords.lng : null, accuracy: coords ? coords.accuracy : 0 }}
+              onChange={(patch) => {
+                setForm((f) => ({
+                  ...f,
+                  ...("label" in patch ? { addressLabel: patch.label } : {}),
+                  ...("address" in patch ? { address: patch.address } : {}),
+                }));
+                if ("lat" in patch) setCoords(typeof patch.lat === "number" ? { lat: patch.lat, lng: patch.lng, accuracy: patch.accuracy || 0 } : null);
+              }}
+            />
+            <label className="save-address-check" style={{ display: "flex", gap: "6px", alignItems: "center", margin: "4px 0" }}>
+              <input type="checkbox" checked={saveAddr} onChange={(e) => setSaveAddr(e.target.checked)} /> احفظ العنوان ده في عناويني
+            </label>
           </>
         )}
 
-        {hasDelivery && (
+        {hasDelivery && addressMode === "select" && (
           <div style={{ margin: "8px 0" }}>
             <button type="button" onClick={handleLocate} disabled={locating}>
               {locating ? "جارٍ تحديد موقعك..." : coords ? "📍 تحديث موقعي الحالي" : "📍 استخدم موقعي الحالي"}
