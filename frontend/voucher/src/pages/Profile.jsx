@@ -2,16 +2,20 @@ import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useAuth, accountIdOf } from "../context/AuthContext.jsx";
 import { CART_SCRIPT_URL } from "../data/data.js";
+import AddressPicker from "../components/AddressPicker.jsx";
 import "./Profile.css";
 
 export default function Profile() {
-  const { user, isLoggedIn, logout, login, removeAccount, refreshUser } = useAuth();
+  const { user, isLoggedIn, logout, login, removeAccount, refreshUser, updateAddresses } = useAuth();
   const navigate = useNavigate();
 
   const [editing, setEditing] = useState(false);
   const [form, setForm] = useState({ newName: "", newPhone: "", currentPassword: "" });
   const [error, setError] = useState("");
   const [saving, setSaving] = useState(false);
+  const [showAddr, setShowAddr] = useState(false);
+  const [newAddr, setNewAddr] = useState({ label: "", address: "", lat: null, lng: null });
+  const [addrErr, setAddrErr] = useState("");
 
   // بنحدّث النقاط من السيرفر أول ما الصفحة تفتح
   useEffect(() => {
@@ -44,6 +48,27 @@ export default function Profile() {
   const handleLogout = () => {
     logout();
     navigate("/");
+  };
+
+  const addresses = user.addresses || [];
+  const saveNewAddress = () => {
+    setAddrErr("");
+    const address = newAddr.address.trim();
+    const hasPos = typeof newAddr.lat === "number" && typeof newAddr.lng === "number";
+    if (!address && !hasPos) {
+      setAddrErr("اكتب العنوان أو حدّد موقعك على الخريطة");
+      return;
+    }
+    const entry = { id: Date.now(), label: newAddr.label.trim() || "عنوان جديد", address: address || "موقعي على الخريطة" };
+    if (hasPos) {
+      entry.lat = newAddr.lat;
+      entry.lng = newAddr.lng;
+    }
+    updateAddresses([...addresses, entry]);
+    setNewAddr({ label: "", address: "", lat: null, lng: null });
+  };
+  const deleteAddress = (id) => {
+    if (window.confirm("حذف العنوان ده؟")) updateAddresses(addresses.filter((a) => a.id !== id));
   };
 
   const openEdit = () => {
@@ -154,6 +179,34 @@ export default function Profile() {
           <span className="menu-icon">📦</span>
           <span className="menu-label">طلباتي</span>
         </div>
+
+        <div className="profile-menu-item" onClick={() => setShowAddr((v) => !v)}>
+          <span className="menu-icon">📍</span>
+          <span className="menu-label">عناويني</span>
+          <span className="menu-value">{addresses.length}</span>
+        </div>
+
+        {showAddr && (
+          <div className="profile-addresses" style={{ padding: "8px 12px", textAlign: "right" }}>
+            {addresses.length === 0 && <p style={{ color: "#777" }}>مفيش عناوين محفوظة لسه.</p>}
+            {addresses.map((a) => (
+              <div key={a.id} style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "8px", borderBottom: "1px solid #eee", padding: "6px 0" }}>
+                <div>
+                  <strong>{a.label}</strong>
+                  <div style={{ color: "#555", fontSize: "14px" }}>{a.address}{typeof a.lat === "number" ? " 📍" : ""}</div>
+                </div>
+                <button type="button" onClick={() => deleteAddress(a.id)} aria-label="حذف">✕</button>
+              </div>
+            ))}
+            <h4 style={{ margin: "10px 0 4px" }}>➕ عنوان جديد</h4>
+            <AddressPicker
+              value={newAddr}
+              onChange={(patch) => setNewAddr((n) => ({ ...n, ...patch }))}
+            />
+            {addrErr && <p style={{ color: "red" }}>{addrErr}</p>}
+            <button type="button" onClick={saveNewAddress}>💾 حفظ العنوان</button>
+          </div>
+        )}
 
         <div className="profile-menu-item" onClick={() => navigate("/track")}>
           <span className="menu-icon">🛵</span>
