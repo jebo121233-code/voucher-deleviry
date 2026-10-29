@@ -6,6 +6,8 @@ import { CART_SCRIPT_URL } from "../data/data.js";
 import { CLOUDINARY_CLOUD_NAME as CLOUD_NAME, CLOUDINARY_UPLOAD_PRESET as UPLOAD_PRESET } from "../data/upload.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { uploadImage as driveUpload } from "../data/imageUtil.js";
+import OptionsEditor from "../components/OptionsEditor.jsx";
+import { prepareOptions, optSummary } from "../data/optionsUtil.js";
 
 // لو ملّيت ملف data/upload.js، المحل يقدر يرفع الصورة من الموبايل مباشرة، وإلا بيكتب رابط الصورة
 
@@ -51,7 +53,7 @@ function itemsOf(o) {
   return o.Items ? String(o.Items).split(/[\n,،]+/).map((s) => s.trim()).filter(Boolean) : [];
 }
 
-const EMPTY_FORM = { itemId: "", name: "", description: "", price: "", category: "", imageUrl: "", quantity: "" };
+const EMPTY_FORM = { itemId: "", name: "", description: "", price: "", category: "", imageUrl: "", quantity: "", options: [] };
 
 export default function Restaurant() {
   const navigate = useNavigate();
@@ -193,6 +195,7 @@ export default function Restaurant() {
       category: it.category || "",
       imageUrl: it.imageUrl || "",
       quantity: "",
+      options: Array.isArray(it.options) ? JSON.parse(JSON.stringify(it.options)) : [],
     });
 
   // رفع صورة المنتج: Cloudinary لو متظبط، وإلا على Google Drive عن طريق السيرفر (من غير أي إعداد)
@@ -253,6 +256,7 @@ export default function Restaurant() {
       price: Number(form.price),
       category: form.category,
       imageUrl: form.imageUrl,
+      options: prepareOptions(form.options),
     };
     if (form.mode === "add" && form.quantity !== "") item.quantity = Number(form.quantity);
     try {
@@ -421,6 +425,7 @@ export default function Restaurant() {
               {form.mode === "add" && (
                 <input type="number" inputMode="numeric" min="0" placeholder="الكمية المتاحة (سيبها فاضية لو من غير حد)" value={form.quantity} onChange={(e) => setForm({ ...form, quantity: e.target.value })} />
               )}
+              <OptionsEditor value={form.options} onChange={(options) => setForm({ ...form, options })} basePrice={form.price} />
               <label className="rst-upload">
                 📷 {uploading ? "جارٍ الرفع..." : form.imageUrl ? "تغيير الصورة" : "اختار صورة"}
                 <input type="file" accept="image/*" hidden disabled={uploading} onChange={(e) => uploadImage(e.target.files[0])} />
@@ -448,6 +453,7 @@ export default function Restaurant() {
                     <div className="rst-muted">
                       {it.price} ج.م {Number(it.discountPercent) > 0 && `• خصم ${it.discountPercent}%`} {it.category && `• ${it.category}`}
                     </div>
+                    {Array.isArray(it.options) && it.options.length > 0 && <div className="rst-muted">🔹 {optSummary(it.options)}</div>}
                   </div>
                 </div>
                 {it.pending && <span className="rst-badge">{TYPE_TEXT[it.pending.type] || ""} قيد المراجعة</span>}
