@@ -3,6 +3,7 @@ import { CART_SCRIPT_URL, shops, categories } from "../data/data.js";
 import { loadDynamicStores, isVisible, isOnHome } from "../data/dynamicStores.js";
 import { uploadImage, assetUrl } from "../data/imageUtil.js";
 import { RestaurantDetail, DriverDetail, CustomerDetail, ChangeLog } from "./AdminDetails.jsx";
+import { fmtField } from "../data/optionsUtil.js";
 import "./Admin.css";
 
 const STATUS_OPTIONS = ["pending", "accepted_by_restaurant", "preparing", "out_for_delivery", "delivered", "cancelled"];
@@ -269,8 +270,8 @@ function Reviews({ password, onChanged }) {
               <div className="adx-box">
                 {Object.keys(nd).map((k) => (
                   <div key={k}>
-                    {k}: <b>{String(nd[k])}</b>
-                    {od[k] !== undefined && String(od[k]) !== String(nd[k]) && <span className="adx-muted"> (كان {String(od[k])})</span>}
+                    {k === "options" ? "الأحجام والإضافات" : k}: <b>{fmtField(k, nd[k])}</b>
+                    {od[k] !== undefined && fmtField(k, od[k]) !== fmtField(k, nd[k]) && <span className="adx-muted"> (كان {fmtField(k, od[k])})</span>}
                   </div>
                 ))}
                 {nd.imageUrl && <img className="adx-img" src={String(nd.imageUrl).split(",")[0]} alt="" />}
@@ -1814,4 +1815,4 @@ export default function Admin() {
       )}
     </div>
   );
-               }
+}
