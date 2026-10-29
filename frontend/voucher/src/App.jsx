@@ -4,6 +4,7 @@ import Navbar from './pages/Navbar.jsx';
 import Home from './pages/Home.jsx';
 import Footer from "./pages/Footer.jsx";
 import Stores from "./pages/Stores.jsx";
+import Search from "./pages/Search.jsx";
 import Signup from "./pages/Signup.jsx";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
@@ -48,6 +49,7 @@ function App() {
         <Routes>
           <Route path='/' element={<Home/>} />
           <Route path='/stores' element={<Stores/>} />
+          <Route path='/search' element={<Search/>} />
           <Route path='/store/:id' element={<Store/>} />
           <Route path='/signup' element={<Signup/>} />
           <Route path='/register' element={<Register/>} />
