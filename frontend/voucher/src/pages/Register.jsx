@@ -3,9 +3,10 @@ import { useNavigate } from "react-router-dom";
 import "./auth.css";
 import { CART_SCRIPT_URL } from "../data/data.js";
 import { useAuth } from "../context/AuthContext.jsx";
+import AddressPicker from "../components/AddressPicker.jsx";
 
 export default function Register() {
-  const [form, setForm] = useState({ name: "", phone: "", address: "", password: "", confirm: "" });
+  const [form, setForm] = useState({ name: "", phone: "", address: "", addressLabel: "", lat: null, lng: null, password: "", confirm: "" });
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [error, setError] = useState("");
@@ -40,6 +41,9 @@ export default function Register() {
           name: form.name,
           phone: form.phone,
           address: form.address,
+          addressLabel: form.addressLabel,
+          lat: form.lat,
+          lng: form.lng,
           password: form.password,
         }),
       });
@@ -77,12 +81,18 @@ export default function Register() {
           onChange={handleChange}
           required
         />
-        <input
-          type="text"
-          name="address"
-          placeholder="العنوان (اختياري، تقدر تضيفه بعدين)"
-          value={form.address}
-          onChange={handleChange}
+        <AddressPicker
+          value={{ label: form.addressLabel, address: form.address, lat: form.lat, lng: form.lng }}
+          onChange={(patch) =>
+            setForm((f) => {
+              const n = { ...f };
+              if ("label" in patch) n.addressLabel = patch.label;
+              if ("address" in patch) n.address = patch.address;
+              if ("lat" in patch) { n.lat = patch.lat; n.lng = patch.lng; }
+              return n;
+            })
+          }
+          addressPlaceholder="العنوان (اختياري، تقدر تضيفه بعدين)"
         />
 
         <div style={{ position: "relative" }}>
