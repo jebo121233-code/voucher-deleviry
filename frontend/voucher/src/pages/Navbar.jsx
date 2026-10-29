@@ -103,6 +103,10 @@ export default function Navbar() {
         <li>
           <Link to="/stores" onClick={() => setMenuOpen(false)}>Stores</Link>
         </li>
+        
+        <li>
+          <Link to="/search" onClick={() => setMenuOpen(false)}>🔍 Search</Link>
+        </li>
 
         <li>
           <Link to="/deals" onClick={() => setMenuOpen(false)}>Deals</Link>
