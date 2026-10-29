@@ -1,0 +1,15 @@
+.opt-editor{border:1px dashed #cfcfcf;border-radius:12px;padding:10px;margin:8px 0;background:#fafafa;direction:rtl;text-align:right}
+.opt-head{display:flex;flex-direction:column;gap:2px;margin-bottom:6px}
+.opt-hint{font-size:12px;color:#777}
+.opt-group{background:#fff;border:1px solid #e3e3e3;border-radius:10px;padding:8px;margin:8px 0}
+.opt-row{display:flex;gap:6px;align-items:center;margin:5px 0;flex-wrap:wrap}
+.opt-row input,.opt-row select{padding:8px;border:1px solid #ddd;border-radius:8px;font:inherit;min-width:0;box-sizing:border-box}
+.opt-name{flex:1}
+.opt-label{flex:2 1 120px}
+.opt-price{flex:1 1 80px;max-width:120px}
+.opt-flags select{flex:1 1 150px}
+.opt-check{display:flex;gap:6px;align-items:center;font-size:13px}
+.opt-check input{width:auto}
+.opt-x{border:0;background:#fdecea;color:#c0392b;border-radius:8px;padding:8px 10px;cursor:pointer}
+.opt-add{border:1px solid #ff6b00;background:#fff;color:#ff6b00;border-radius:10px;padding:8px 10px;font:inherit;cursor:pointer}
+.opt-actions{display:flex;gap:6px;flex-wrap:wrap;margin-top:6px}
