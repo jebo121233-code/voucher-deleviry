@@ -3,6 +3,8 @@
 import { useState, useEffect, useCallback } from "react";
 import { CART_SCRIPT_URL } from "../data/data.js";
 import { uploadImage, assetUrl } from "../data/imageUtil.js";
+import OptionsEditor from "../components/OptionsEditor.jsx";
+import { prepareOptions, fmtField } from "../data/optionsUtil.js";
 
 async function api(body) {
   const res = await fetch(CART_SCRIPT_URL, {
@@ -82,7 +84,7 @@ function Modal({ title, onClose, children }) {
 /* ===================== المنيو ===================== */
 
 function ItemRow({ password, storeId, item, onChanged }) {
-  const [f, setF] = useState({ ...item, quantity: item.quantity === null || item.quantity === undefined ? "" : item.quantity });
+  const [f, setF] = useState({ ...item, quantity: item.quantity === null || item.quantity === undefined ? "" : item.quantity, options: Array.isArray(item.options) ? JSON.parse(JSON.stringify(item.options)) : [] });
   const { busy, msg, run } = useSaver();
   const [up, setUp] = useState(false);
   const isNew = !item.itemId;
@@ -106,7 +108,7 @@ function ItemRow({ password, storeId, item, onChanged }) {
     const r = await run(() =>
       api({
         action: "sd_adminSaveItem", password, storeId,
-        item: { itemId: item.itemId || undefined, name: f.name, description: f.description, price: f.price, discountPercent: f.discountPercent, category: f.category, imageUrl: f.imageUrl, available: f.available, quantity: f.quantity },
+        item: { itemId: item.itemId || undefined, name: f.name, description: f.description, price: f.price, discountPercent: f.discountPercent, category: f.category, imageUrl: f.imageUrl, available: f.available, quantity: f.quantity, options: prepareOptions(f.options) },
       })
     );
     if (r) onChanged();
@@ -132,6 +134,7 @@ function ItemRow({ password, storeId, item, onChanged }) {
         <Field label="الكمية (فاضي = بلا حد)"><input type="number" inputMode="numeric" value={f.quantity} onChange={(e) => setF({ ...f, quantity: e.target.value })} /></Field>
         <Field label="القسم"><input value={f.category || ""} onChange={(e) => setF({ ...f, category: e.target.value })} /></Field>
       </div>
+      <OptionsEditor value={f.options} onChange={(options) => setF({ ...f, options })} basePrice={f.price} />
       <div className="adm-row">
         <label className="adm-check"><input type="checkbox" checked={f.available !== false} onChange={(e) => setF({ ...f, available: e.target.checked })} /> متاح للطلب</label>
         <label className="adm-btn gray">{up ? "جارٍ الرفع..." : "📷 صورة"}<input type="file" accept="image/*" hidden disabled={up} onChange={pick} /></label>
@@ -157,7 +160,7 @@ function MenuEditor({ password, storeId }) {
 
   if (err) return <p className="adm-err">⚠️ {err}</p>;
   if (!items) return <p>جارٍ التحميل...</p>;
-  const blank = { itemId: "", name: "", description: "", price: "", discountPercent: 0, category: "", imageUrl: "", available: true, quantity: null };
+  const blank = { itemId: "", name: "", description: "", price: "", discountPercent: 0, category: "", imageUrl: "", available: true, quantity: null, options: [] };
   const shown = items.filter((i) => !q || i.name.includes(q) || String(i.category).includes(q));
   return (
     <div>
@@ -167,7 +170,7 @@ function MenuEditor({ password, storeId }) {
       <h4>📋 الأصناف</h4>
       {items.length > 6 && <input className="adm-search" placeholder="🔍 بحث" value={q} onChange={(e) => setQ(e.target.value)} />}
       {shown.map((it) => (
-        <ItemRow key={it.itemId + "|" + it.name + it.price + it.discountPercent + it.available + it.quantity} password={password} storeId={storeId} item={it} onChanged={load} />
+        <ItemRow key={it.itemId + "|" + it.name + it.price + it.discountPercent + it.available + it.quantity + JSON.stringify(it.options || [])} password={password} storeId={storeId} item={it} onChanged={load} />
       ))}
       {items.length === 0 && <p>المنيو فاضي لسه.</p>}
     </div>
@@ -265,8 +268,8 @@ function PartnerReviews({ password, acc, onChanged }) {
       {reqs.map((q) => (
         <div className="adm-item" key={q.requestId}>
           <b>{TYPE[q.type] || q.type} {q.newData && q.newData.name ? `— ${q.newData.name}` : ""}</b>
-          {q.newData && <small>{Object.keys(q.newData).map((k) => `${k}: ${q.newData[k]}`).join(" • ")}</small>}
-          {q.oldData && <small>قبل: {Object.keys(q.oldData).map((k) => `${k}: ${q.oldData[k]}`).join(" • ")}</small>}
+          {q.newData && <small>{Object.keys(q.newData).map((k) => `${k}: ${fmtField(k, q.newData[k])}`).join(" • ")}</small>}
+          {q.oldData && <small>قبل: {Object.keys(q.oldData).map((k) => `${k}: ${fmtField(k, q.oldData[k])}`).join(" • ")}</small>}
           {q.type === "add" && (
             <Field label="نسبة الخصم % (اختياري)"><input type="number" inputMode="decimal" value={disc[q.requestId] || ""} onChange={(e) => setDisc({ ...disc, [q.requestId]: e.target.value })} /></Field>
           )}
@@ -295,7 +298,7 @@ export function RestaurantDetail({ password, acc, onClose, onChanged }) {
   const [f, setF] = useState({
     name: acc.restaurantName || acc.name || "", ownerName: acc.ownerName || "", phone: acc.phone || "", category: acc.category || "",
     username: acc.username || "", restaurantPassword: acc.password || "", description: acc.description || "", address: acc.address || "",
-    percentage: String(acc.percentage || "").replace("%", ""), note: acc.note || "",
+    percentage: String(acc.percentage || "").replace("%", ""), note: acc.note || "", altName: acc.altName || "",
   });
   const [links, setLinks] = useState(Array.isArray(acc.links) ? acc.links : []);
   const [images, setImages] = useState(Array.isArray(acc.images) ? acc.images : []);
@@ -321,7 +324,7 @@ export function RestaurantDetail({ password, acc, onClose, onChanged }) {
 
   const saveInfo = async () => {
     const r = await info.run(() =>
-      update({ name: f.name, ownerName: f.ownerName, phone: f.phone, category: f.category, username: f.username, restaurantPassword: f.restaurantPassword, description: f.description, address: f.address, percentage: f.percentage, note: f.note, links })
+      update({ name: f.name, ownerName: f.ownerName, phone: f.phone, category: f.category, username: f.username, restaurantPassword: f.restaurantPassword, description: f.description, address: f.address, percentage: f.percentage, note: f.note, altName: f.altName, links })
     );
     if (r) onChanged();
   };
@@ -369,6 +372,7 @@ export function RestaurantDetail({ password, acc, onClose, onChanged }) {
       {tab === "info" && (
         <div className="adm-form">
           <Field label="اسم المحل"><input value={f.name} onChange={set("name")} /></Field>
+          <Field label="الاسم بالعربي / English (للسيرش)"><input value={f.altName} onChange={set("altName")} placeholder="مثلاً: رولز أو Rolz" /></Field>
           <Field label="صاحب المحل"><input value={f.ownerName} onChange={set("ownerName")} /></Field>
           <Field label="الموبايل"><input inputMode="tel" value={f.phone} onChange={set("phone")} /></Field>
           <Field label="النشاط"><input value={f.category} onChange={set("category")} /></Field>
