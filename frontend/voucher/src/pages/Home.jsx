@@ -1,24 +1,23 @@
 import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import "./Home.css";
+import "./HomeTop.css";
 import { Link } from "react-router-dom";
+import { useAuth } from "../context/AuthContext.jsx";
 import { shops as fakeStores }  from '../data/data.js';
 import { categories as fakeCategories }  from '../data/data.js';
 import { cards } from '../data/data.js';
 import { assetUrl } from '../data/imageUtil.js';
 import { isVisible, isOnHome, getStoresVersion } from '../data/dynamicStores.js';
+import { categoryImage, categoryEmoji } from '../data/categoryImages.js';
 
 export default function Home() {
+  const { user, role } = useAuth();
+  const greetName = role === "customer" && user && user.name ? String(user.name).trim().split(/\s+/)[0] : "";
   const [stores, setStores] = useState([]);
   const [index, setIndex] = useState(0);
   const [categories, setCategories] = useState([]);
   const [selectedCategory, setSelectedCategory] = useState("");
-
-  const handleCategoryChange = (e) => {
-    const categoryId = e.target.value;
-    setSelectedCategory(categoryId);
-    fetchStores(categoryId);
-  };
 
   const handleReset = () => {
     setSelectedCategory("");
@@ -101,6 +100,37 @@ export default function Home() {
   return (
     <div className="home">
 
+      {/* SEARCH + CATEGORIES (زي طلبات) */}
+      <div className="hm-top">
+        <div className="hm-hello">{greetName ? `Hello, ${greetName}` : "Hello 👋"}</div>
+        <Link to="/search" className="hm-search" aria-label="بحث">
+          <span className="hm-search-ico">🔍</span>
+          <span>ابحث عن مطعم أو شريك...</span>
+        </Link>
+      </div>
+      <div className="hm-cats">
+        <button type="button" className={`hm-cat${selectedCategory === "" ? " on" : ""}`} onClick={handleReset}>
+          <span className="hm-cat-img">✨</span>
+          <span className="hm-cat-name">الكل</span>
+        </button>
+        {categories.map((cat) => (
+          <button
+            type="button"
+            key={cat.id}
+            className={`hm-cat${String(selectedCategory) === String(cat.id) ? " on" : ""}`}
+            onClick={() => {
+              setSelectedCategory(String(cat.id));
+              fetchStores(String(cat.id));
+            }}
+          >
+            <span className="hm-cat-img">
+              {categoryImage(cat.id) ? <img src={categoryImage(cat.id)} alt={cat.name} loading="lazy" /> : categoryEmoji(cat.id)}
+            </span>
+            <span className="hm-cat-name">{cat.name}</span>
+          </button>
+        ))}
+      </div>
+
       {/* HERO */}
       <section
         className="hero"
@@ -124,6 +154,7 @@ export default function Home() {
 
             <div className="hero-content">
               <h1>{stores[index]?.name}</h1>
+              {stores[index]?.percentage && <div className="hero-pct">{stores[index].percentage} OFF</div>}
               <p>{stores[index]?.description}</p>
 
               <Link to="/stores">
@@ -185,20 +216,6 @@ export default function Home() {
 
       {/* STORE GRID */}
       <section className="store">
-        <div className="store-header-row">
-          <div className="filter-section">
-            <select value={selectedCategory} onChange={handleCategoryChange}>
-              <option value="">-- Select Category --</option>
-              {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
-              ))}
-            </select>
-            <button onClick={handleReset}>Reset</button>
-          </div>
-        </div>
-
         <div className="store-scroll">
           {stores.map((store) => (
             <Link to={`/store/${store.id}`} className="store-link" key={store.id}>
@@ -234,4 +251,4 @@ export default function Home() {
       </section>
     </div>
   );
-}
+               }
