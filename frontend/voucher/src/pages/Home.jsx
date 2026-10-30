@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import "./Home.css";
 import "./HomeTop.css";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext.jsx";
 import { shops as fakeStores }  from '../data/data.js';
 import { categories as fakeCategories }  from '../data/data.js';
@@ -12,6 +12,7 @@ import { isVisible, isOnHome, getStoresVersion } from '../data/dynamicStores.js'
 import { categoryImage, categoryEmoji } from '../data/categoryImages.js';
 
 export default function Home() {
+  const navigate = useNavigate();
   const { user, role } = useAuth();
   const greetName = role === "customer" && user && user.name ? String(user.name).trim().split(/\s+/)[0] : "";
   const [stores, setStores] = useState([]);
@@ -109,7 +110,7 @@ export default function Home() {
         </Link>
       </div>
       <div className="hm-cats">
-        <button type="button" className={`hm-cat${selectedCategory === "" ? " on" : ""}`} onClick={handleReset}>
+        <button type="button" className="hm-cat" onClick={() => navigate("/stores")}>
           <span className="hm-cat-img">✨</span>
           <span className="hm-cat-name">الكل</span>
         </button>
@@ -117,11 +118,8 @@ export default function Home() {
           <button
             type="button"
             key={cat.id}
-            className={`hm-cat${String(selectedCategory) === String(cat.id) ? " on" : ""}`}
-            onClick={() => {
-              setSelectedCategory(String(cat.id));
-              fetchStores(String(cat.id));
-            }}
+            className="hm-cat"
+            onClick={() => navigate(`/stores?category=${cat.id}`)}
           >
             <span className="hm-cat-img">
               {categoryImage(cat.id) ? <img src={categoryImage(cat.id)} alt={cat.name} loading="lazy" /> : categoryEmoji(cat.id)}
@@ -251,4 +249,4 @@ export default function Home() {
       </section>
     </div>
   );
-               }
+}
