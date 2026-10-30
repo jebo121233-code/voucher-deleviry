@@ -49,6 +49,7 @@ export default function Store() {
   useEffect(() => {
     const params = new URLSearchParams(location.search);
     const category = params.get("category");
+    setSelectedCategory(category || "");
 
     fetchStores(category);
     fetchCategories();
