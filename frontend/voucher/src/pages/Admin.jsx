@@ -1013,6 +1013,34 @@ function SitePreview() {
   );
 }
 
+// تسجيل الدخول بيفضل محفوظ على الجهاز ده 30 يوم، وبيتمسح لما تدوس "خروج"
+const ADMIN_SESSION_KEY = "ve_admin_session";
+const ADMIN_SESSION_DAYS = 30;
+const readAdminSession = () => {
+  try {
+    const s = JSON.parse(localStorage.getItem(ADMIN_SESSION_KEY) || "null");
+    if (s && s.pw && s.exp > Date.now()) return s.pw;
+    localStorage.removeItem(ADMIN_SESSION_KEY);
+  } catch {
+    /* ignore */
+  }
+  return "";
+};
+const saveAdminSession = (pw) => {
+  try {
+    localStorage.setItem(ADMIN_SESSION_KEY, JSON.stringify({ pw, exp: Date.now() + ADMIN_SESSION_DAYS * 86400000 }));
+  } catch {
+    /* ignore */
+  }
+};
+const clearAdminSession = () => {
+  try {
+    localStorage.removeItem(ADMIN_SESSION_KEY);
+  } catch {
+    /* ignore */
+  }
+};
+
 export default function Admin() {
   const [password, setPassword] = useState("");
   const [authenticated, setAuthenticated] = useState(false);
@@ -1059,6 +1087,28 @@ export default function Admin() {
   });
   const [offerCreating, setOfferCreating] = useState(false);
 
+  // دخول تلقائي لو فيه جلسة محفوظة (وبيتأكد من الباسورد مع السيرفر، فلو اتغيّر بيطلب الدخول تاني)
+  useEffect(() => {
+    const saved = readAdminSession();
+    if (!saved) return;
+    fetch(CART_SCRIPT_URL, {
+      method: "POST",
+      headers: { "Content-Type": "text/plain;charset=utf-8" },
+      body: JSON.stringify({ action: "adminLogin", password: saved }),
+    })
+      .then((r) => r.json())
+      .then((data) => {
+        if (data.success) {
+          setPassword(saved);
+          setAuthenticated(true);
+          saveAdminSession(saved); // بنجدّد المدة مع كل دخول
+        } else clearAdminSession();
+      })
+      .catch(() => {
+        /* مفيش نت: هيطلب الدخول عادي */
+      });
+  }, []);
+
   const handleLogin = async (e) => {
     e.preventDefault();
     setLoginError("");
@@ -1071,6 +1121,7 @@ export default function Admin() {
       });
       const data = await res.json();
       if (data.success) {
+        saveAdminSession(password);
         setAuthenticated(true);
       } else {
         setLoginError(data.error || "باسورد غلط");
@@ -1407,6 +1458,7 @@ export default function Admin() {
           type="button"
           className="admin-logout-btn"
           onClick={() => {
+            clearAdminSession();
             setAuthenticated(false);
             setPassword("");
           }}
