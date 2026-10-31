@@ -5,6 +5,7 @@ import { readMenu, fetchMenuFresh } from "../data/menuCache.js";
 import { shops as fakeStores, MENU_STORE_KEYS, CART_SCRIPT_URL } from "../data/data.js";
 import { useCart } from "../context/CartContext.jsx";
 import { assetUrl } from "../data/imageUtil.js";
+import Nm from "../components/Nm.jsx";
 
 // يحسب ملخص الاختيارات: بيفرق بين مجموعة "priceMode: absolute" (زي الحجم - كل اختيار له سعر مستقل كامل)
 // ومجموعات الإضافة العادية (زي الصوصات - بتتضاف فوق السعر الأساسي)
@@ -357,14 +358,14 @@ export default function Store() {
                   navigate("/cart");
                 }}
               >
-                احصل على خصم - {store.name}
+                احصل على خصم - <Nm name={store.name} alt={store.altName} />
               </button>
             </div>
             )}
           </div>
         )}
 
-        <h2>{store.name}</h2>
+        <h2><Nm name={store.name} alt={store.altName} /></h2>
 
         <p>{store.description}</p>
 
