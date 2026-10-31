@@ -4,6 +4,7 @@ import "./auth.css";
 import "./Points.css";
 import { CART_SCRIPT_URL } from "../data/data.js";
 import { useAuth } from "../context/AuthContext.jsx";
+import Nm from "../components/Nm.jsx";
 
 const VODAFONE_CASH_NUMBER = "01025311724";
 
@@ -170,7 +171,7 @@ export default function Points() {
           {orders.map((o) => (
             <div className="pts-row" key={o.orderId}>
               <span>
-                {o.storeName} • {o.pointsUsed} نقطة
+                <Nm name={o.storeName} /> • {o.pointsUsed} نقطة
               </span>
               {pendingRefund(o.orderId) ? (
                 <span className="pts-st pts-pending">طلب استرداد موجود</span>
