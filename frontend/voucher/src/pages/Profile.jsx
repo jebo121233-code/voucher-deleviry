@@ -4,6 +4,7 @@ import { useAuth, accountIdOf } from "../context/AuthContext.jsx";
 import { CART_SCRIPT_URL } from "../data/data.js";
 import AddressPicker from "../components/AddressPicker.jsx";
 import "./Profile.css";
+import Nm from "../components/Nm.jsx";
 
 export default function Profile() {
   const { user, isLoggedIn, logout, login, removeAccount, refreshUser, updateAddresses } = useAuth();
@@ -121,7 +122,7 @@ export default function Profile() {
       <div className="profile-header">
         <div className="profile-avatar">{user.name?.[0]?.toUpperCase() || "؟"}</div>
         <div className="profile-header-info">
-          <h2>{user.name}</h2>
+          <h2><Nm name={user.name} /></h2>
           <span>{user.phone}</span>
         </div>
         <button className="profile-edit-btn" onClick={openEdit}>
