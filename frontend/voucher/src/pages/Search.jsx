@@ -5,6 +5,7 @@ import { shops } from "../data/data.js";
 import { assetUrl } from "../data/imageUtil.js";
 import { isVisible, getStoresVersion, loadDynamicStores } from "../data/dynamicStores.js";
 import { rankShops } from "../data/searchUtil.js";
+import Nm from "../components/Nm.jsx";
 
 export default function Search() {
   const navigate = useNavigate();
@@ -41,8 +42,8 @@ export default function Search() {
           <div className="srch-card" key={s.id} onClick={() => navigate(`/store/${s.id}`)}>
             {s.logos && s.logos[0] ? <img src={assetUrl(s.logos[0])} alt={s.name} /> : <div className="srch-noimg">🏪</div>}
             <div className="srch-info">
-              <strong>{s.name}</strong>
-              {s.altName && s.altName !== s.name && <span className="srch-alt">{s.altName}</span>}
+              <strong><Nm name={s.name} alt={s.altName} /></strong>
+              {s.altName && s.altName !== s.name && <span className="srch-alt" translate="no">{s.altName}</span>}
               {s.description && <small>{s.description}</small>}
             </div>
             {s.percentage && <span className="srch-pct">{s.percentage} OFF</span>}
