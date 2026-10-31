@@ -10,6 +10,7 @@ import { cards } from '../data/data.js';
 import { assetUrl } from '../data/imageUtil.js';
 import { isVisible, isOnHome, getStoresVersion } from '../data/dynamicStores.js';
 import { categoryImage, categoryEmoji } from '../data/categoryImages.js';
+import Nm from "../components/Nm.jsx";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -103,7 +104,7 @@ export default function Home() {
 
       {/* SEARCH + CATEGORIES (زي طلبات) */}
       <div className="hm-top">
-        <div className="hm-hello">{greetName ? `Hello, ${greetName}` : "Hello 👋"}</div>
+        <div className="hm-hello">{greetName ? <>Hello, <Nm name={greetName} /></> : "Hello 👋"}</div>
         <Link to="/search" className="hm-search" aria-label="بحث">
           <span className="hm-search-ico">🔍</span>
           <span>ابحث عن مطعم أو شريك...</span>
@@ -151,7 +152,7 @@ export default function Home() {
             )}
 
             <div className="hero-content">
-              <h1>{stores[index]?.name}</h1>
+              <h1><Nm name={stores[index]?.name} alt={stores[index]?.altName} /></h1>
               {stores[index]?.percentage && <div className="hero-pct">{stores[index].percentage} OFF</div>}
               <p>{stores[index]?.description}</p>
 
@@ -233,7 +234,7 @@ export default function Home() {
                   />
                 )}
 
-                <h3>{store.name}</h3>
+                <h3><Nm name={store.name} alt={store.altName} /></h3>
                 <p>{store.description}</p>
                 {store.percentage && (
                   <div className="percentage-badge">
@@ -249,4 +250,4 @@ export default function Home() {
       </section>
     </div>
   );
-}
+          }
