@@ -16,6 +16,11 @@ import CardOrder from "./pages/CardOrder.jsx";
 import Cart from "./pages/Cart.jsx";
 import { CartProvider } from "./context/CartContext.jsx";
 import { AuthProvider } from "./context/AuthContext.jsx";
+
+// لغة الموقع الأصلية عربي: عشان متصفح Chrome يعرض "ترجمة من العربية" مش "من الإنجليزية"
+if (typeof document !== "undefined" && !/translated-(ltr|rtl)/.test(document.documentElement.className)) {
+  document.documentElement.lang = "ar";
+}
 import ScrollToTop from './pages/ScrollToTop.jsx';
 import OrderHistory from "./pages/OrderHistory.jsx";
 import BottomNav from "./pages/BottomNav.jsx";
