@@ -4,6 +4,7 @@ import "./auth.css";
 import "./TrackOrder.css";
 import { CART_SCRIPT_URL } from "../data/data.js";
 import { useAuth } from "../context/AuthContext.jsx";
+import Nm from "../components/Nm.jsx";
 
 const POLL_MS = 8000;
 const ACTIVE = ["payment_review", "pending", "new", "preparing", "ready", "awaiting_handover", "on_the_way", "accepted_by_restaurant", "out_for_delivery"];
@@ -100,7 +101,7 @@ export default function TrackOrder() {
         {list.map((o) => (
           <div className="trk-card" key={o.orderId}>
             <div className="trk-row">
-              <strong>{o.storeName}</strong>
+              <strong><Nm name={o.storeName} /></strong>
               <span className="trk-badge">{STATUS_TEXT[o.status] || o.status}</span>
             </div>
             <div className="trk-muted">{o.items}</div>
