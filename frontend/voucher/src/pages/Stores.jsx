@@ -6,6 +6,7 @@ import { shops as fakeStores } from '../data/data.js';
 import { categories as fakeCategories } from '../data/data.js';
 import { assetUrl } from '../data/imageUtil.js';
 import { isVisible, getStoresVersion } from '../data/dynamicStores.js';
+import Nm from "../components/Nm.jsx";
 
 export default function Store() {
   const navigate = useNavigate();
@@ -108,7 +109,7 @@ export default function Store() {
                 />
               ) : null}
 
-              <h3>{store.name}</h3>
+              <h3><Nm name={store.name} alt={store.altName} /></h3>
               <p>{store.description}</p>
               {store.percentage && (
                 <div className="percentage-badge">
