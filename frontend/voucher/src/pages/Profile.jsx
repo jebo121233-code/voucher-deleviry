@@ -221,7 +221,7 @@ export default function Profile() {
 
 <div className="profile-menu-item" onClick={() => navigate("/vouchers")}>
   <span className="menu-icon">🎫</span>
-  <span className="menu-label">Vouchers</span>
+  <span className="menu-label">قسائم</span>
 </div>
 
 <div className="profile-menu-item" onClick={() => window.open(`https://wa.me/201025311724`, "_blank")}>
