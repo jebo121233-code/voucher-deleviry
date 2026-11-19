@@ -7,6 +7,8 @@ import { useCart } from "../context/CartContext.jsx";
 import { useAuth } from "../context/AuthContext.jsx";
 import { CART_SCRIPT_URL, WHATSAPP_NUMBER, MENU_STORE_KEYS } from "../data/data.js";
 import AddressPicker from "../components/AddressPicker.jsx";
+import InvoiceButton, { InvoiceSheet } from "../components/Invoice.jsx";
+import { buildInvoice } from "../data/invoiceUtil.js";
 
 const CARD_FORM_URL = "https://docs.google.com/forms/d/e/1FAIpQLSfL4bWVRHsgjOa2I5J2RC38pF2olaUMWsVghwxfuz9MrJyslA/formResponse";
 
@@ -253,6 +255,7 @@ export default function Cart() {
       status: "pending",
       lines: hasDelivery ? cart.deliveryItems.map((i) => ({ itemId: i.itemId, qty: i.qty })) : [],
       usePoints: usingPoints,
+      deliveryFee: hasDelivery ? deliveryFeeTotal : cart.cardItems.length > 0 ? cardsShippingTotal : 0,
     };
     if (coords) {
       newOrderData.customerLat = coords.lat;
@@ -344,6 +347,23 @@ export default function Cart() {
       orderId: result.orderId,
       status: result.status,
       pointsUsed,
+      invoice: buildInvoice(
+        {
+          OrderID: result.orderId,
+          Timestamp: Date.now(),
+          CustomerName: form.name,
+          CustomerPhone: user.phone,
+          CustomerAddress: form.address,
+          StoreName: storeName,
+          Items: itemsText,
+          Total: grandTotal,
+          PaymentMethod: paymentMethodText,
+          DeliveryFee: hasDelivery ? deliveryFeeTotal : cart.cardItems.length > 0 ? cardsShippingTotal : 0,
+          PointsUsed: pointsUsed,
+          Status: result.status,
+        },
+        { audience: "customer" }
+      ),
       whatsappUrl,
       isTransfer: selectedPayment.needsTransfer,
     });
@@ -370,7 +390,13 @@ export default function Cart() {
         {done.pointsUsed > 0 && (
           <p style={{ textAlign: "center" }}>⭐ اتخصم {done.pointsUsed} نقطة لتفعيل الخصم.</p>
         )}
+        {done.invoice && (
+          <div style={{ background: "#fff", border: "1px solid #ddd", borderRadius: "12px", padding: "10px", margin: "12px 0" }}>
+            <InvoiceSheet inv={done.invoice} />
+          </div>
+        )}
         <div className="signUp" style={{ display: "flex", flexDirection: "column", gap: "10px", alignItems: "center" }}>
+          {done.invoice && <InvoiceButton invoice={done.invoice} label="🖨️ طباعة الفاتورة" />}
           <a href={done.whatsappUrl} target="_blank" rel="noopener noreferrer">
             <button type="button">
               {underReview ? "📱 ابعت إثبات التحويل على واتساب" : "📱 تواصل معنا على واتساب"}
