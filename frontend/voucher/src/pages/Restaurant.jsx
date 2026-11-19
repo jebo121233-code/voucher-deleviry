@@ -8,6 +8,7 @@ import { useAuth } from "../context/AuthContext.jsx";
 import { uploadImage as driveUpload } from "../data/imageUtil.js";
 import OptionsEditor from "../components/OptionsEditor.jsx";
 import { prepareOptions, optSummary } from "../data/optionsUtil.js";
+import InvoiceButton from "../components/Invoice.jsx";
 
 // لو ملّيت ملف data/upload.js، المحل يقدر يرفع الصورة من الموبايل مباشرة، وإلا بيكتب رابط الصورة
 
@@ -323,6 +324,7 @@ export default function Restaurant() {
           <div className="rst-muted">بيانات العميل هتظهر بعد ما دليفري يقبل الأوردر.</div>
         )}
         <div className="rst-actions">
+          <InvoiceButton order={o} audience="partner" className="rst-gray" label="🧾 فاتورة / طباعة" />
           {isNew && (
             <button disabled={isBusy} onClick={() => act("of_partnerAccept", o.OrderID)}>
               قبول وبدء التجهيز
