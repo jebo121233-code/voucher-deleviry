@@ -5,6 +5,7 @@ import "./TrackOrder.css";
 import { CART_SCRIPT_URL } from "../data/data.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import Nm from "../components/Nm.jsx";
+import InvoiceButton from "../components/Invoice.jsx";
 
 const POLL_MS = 8000;
 const ACTIVE = ["payment_review", "pending", "new", "preparing", "ready", "awaiting_handover", "on_the_way", "accepted_by_restaurant", "out_for_delivery"];
@@ -108,6 +109,7 @@ export default function TrackOrder() {
             <button type="button" onClick={() => navigate(`/track?id=${encodeURIComponent(o.orderId)}`)}>
               تابع الأوردر
             </button>
+            <InvoiceButton order={o} audience="customer" label="🧾 الفاتورة / طباعة" />
           </div>
         ))}
       </div>
@@ -152,6 +154,9 @@ export default function TrackOrder() {
         </div>
       )}
 
+      <button type="button" onClick={() => navigate(`/invoice?id=${encodeURIComponent(orderId)}`)}>
+        🧾 الفاتورة / طباعة
+      </button>
       <button type="button" className="trk-back" onClick={() => navigate("/track")}>
         كل أوردراتي
       </button>
