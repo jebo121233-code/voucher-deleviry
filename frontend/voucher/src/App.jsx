@@ -5,6 +5,7 @@ import Home from './pages/Home.jsx';
 import Footer from "./pages/Footer.jsx";
 import Stores from "./pages/Stores.jsx";
 import Search from "./pages/Search.jsx";
+import Invoice from "./pages/Invoice.jsx";
 import Signup from "./pages/Signup.jsx";
 import Login from "./pages/Login.jsx";
 import Register from "./pages/Register.jsx";
@@ -74,6 +75,7 @@ function App() {
           <Route path="/restaurant" element={<Restaurant />} />
           <Route path="/points" element={<Points />} />
           <Route path="/track" element={<TrackOrder />} />
+          <Route path="/invoice" element={<Invoice />} />
         </Routes>
         {!isAdminPage && <Footer />}
         {!isAdminPage && <BottomNav />}
