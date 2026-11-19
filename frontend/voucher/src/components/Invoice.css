@@ -1,0 +1,28 @@
+.inv-overlay{position:fixed;inset:0;background:rgba(0,0,0,.65);z-index:6000;display:flex;align-items:flex-start;justify-content:center;overflow-y:auto;padding:12px;direction:rtl}
+.inv-box{background:#fff;border-radius:14px;width:100%;max-width:400px;padding:14px;box-sizing:border-box}
+.inv-actions{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:10px}
+.inv-actions button,.inv-actions select{flex:1 1 auto;padding:10px 12px;border-radius:10px;border:1px solid #ff6b00;background:#fff;color:#ff6b00;font:inherit;cursor:pointer}
+.inv-actions .inv-print-btn{background:#ff6b00;color:#fff}
+.inv-sheet{font-family:Tahoma,Arial,sans-serif;color:#000;font-size:13px;line-height:1.5;background:#fff;padding:6px 4px}
+.inv-head{text-align:center;border-bottom:2px dashed #000;padding-bottom:8px;margin-bottom:8px}
+.inv-brand{font-size:20px;font-weight:800}
+.inv-title{font-size:15px;font-weight:700;margin-top:2px}
+.inv-meta{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;font-size:12px;margin:2px 0}
+.inv-block{border-top:1px dashed #000;padding-top:6px;margin-top:6px}
+.inv-table{width:100%;border-collapse:collapse;margin-top:6px}
+.inv-table th{border-bottom:1px solid #000;text-align:right;font-size:12px;padding:3px 2px}
+.inv-table td{padding:3px 2px;vertical-align:top;border-bottom:1px dotted #999}
+.inv-table .n{text-align:center;white-space:nowrap}
+.inv-tot{display:flex;justify-content:space-between;margin:2px 0}
+.inv-grand{font-size:16px;font-weight:800;border-top:2px solid #000;margin-top:6px;padding-top:6px}
+.inv-collect{border:2px solid #000;padding:6px;text-align:center;font-weight:800;margin-top:8px;font-size:15px}
+.inv-foot{text-align:center;margin-top:10px;border-top:2px dashed #000;padding-top:8px;font-size:12px}
+.inv-sign{display:flex;justify-content:space-between;margin-top:14px;font-size:12px}
+.inv-sign span{border-top:1px solid #000;padding-top:2px;min-width:40%;text-align:center}
+@media print{
+  html,body{background:#fff !important}
+  #root{display:none !important}
+  .inv-overlay{position:static !important;background:none !important;padding:0 !important;display:block !important;overflow:visible !important}
+  .inv-box{max-width:none !important;width:100% !important;padding:0 !important;border-radius:0 !important}
+  .inv-actions{display:none !important}
+}
