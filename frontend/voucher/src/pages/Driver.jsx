@@ -5,6 +5,7 @@ import "./Driver.css";
 import { CART_SCRIPT_URL } from "../data/data.js";
 import { useAuth } from "../context/AuthContext.jsx";
 import { startLocationWatch } from "../native/tracking.js";
+import InvoiceButton from "../components/Invoice.jsx";
 
 const POLL_MS = 6000;
 
@@ -298,6 +299,8 @@ export default function Driver() {
         </div>
 
         {(o.DelayMinutes > 0) && <div className="drv-warn">تأخير مسجّل: {o.DelayMinutes} دقيقة</div>}
+
+        <InvoiceButton order={o} audience="driver" className="drv-btn drv-nav" label="🧾 الفاتورة / مراجعة الأوردر / طباعة" />
 
         {target && target.navigationUrl && (
           <a className="drv-btn drv-nav" href={target.navigationUrl} target="_blank" rel="noreferrer">
